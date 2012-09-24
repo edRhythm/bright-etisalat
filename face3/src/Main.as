@@ -46,9 +46,13 @@ package
 		private var _faceMask:Sprite;
 		private var _faceRim:Sprite;
 		
+		public var debug:Boolean;
+		
 		
 		public function Main() 
 		{
+			debug = false;
+			
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			stage.align = StageAlign.TOP_LEFT;
 			
@@ -62,14 +66,14 @@ package
 			//cam harness
 			_camOutput = new Sprite();
 			_camOutput.y = 1080;
-			_camOutput.rotation = -90;		
+			_camOutput.rotation = -90;	
 			
 			TweenMax.to(_camOutput, 1, {colorMatrixFilter:{saturation:0, contrast:1.6}});
 			
 			addChild(_camOutput);
 			
 			//camera bitmap
-			cameraDetectionBitmap = new CameraBitmap( h, w, 30 );
+			cameraDetectionBitmap = new CameraBitmap( h, w, 30, true );
 			cameraDetectionBitmap.addEventListener( Event.RENDER, cameraReadyHandler );
 			_camOutput.addChild( new Bitmap( cameraDetectionBitmap.bitmapData  ) );
 			
@@ -78,13 +82,7 @@ package
 			drawMatrix = new Matrix( 1/ scaleFactor, 0, 0, 1 / scaleFactor );
 			drawMatrix.rotate( -90 * (Math.PI / 180 ) );
 			drawMatrix.translate( 0, detectionMap.height );
-			//			drawMatrix.scale(-1,1);
-			//			drawMatrix.translate(detectionMap.width,0);
-			
-			//boxes
-			faceRectContainer = new Sprite();
-			addChild( faceRectContainer );
-			
+				
 			eyesRect = new Sprite();
 			addChild( eyesRect );
 			
@@ -108,6 +106,14 @@ package
 			_faceRim.addChild(faceRimShape);
 			
 			addChild(_faceRim);
+			
+			//debug 
+			if(debug)
+			{
+				faceRectContainer = new Sprite();
+				addChild( faceRectContainer );			
+			}
+	
 			
 		}
 		
@@ -133,25 +139,22 @@ package
 		
 		private function detectionHandler( e :ObjectDetectorEvent ):void
 		{
-//			var g :Graphics = faceRectContainer.graphics;
-//			g.clear();
-//			
-//			var g2 :Graphics = eyesRect.graphics;
-//			g2.clear();
-//			
-//			var eyeAreaH:Number=0;
+			if(debug) 
+			{
+				var g :Graphics = faceRectContainer.graphics;
+				g.clear();
+			}
+
 			
 			if( e.rects.length>0 )
 			{
-//				g.lineStyle( 2 );	// black 2pix
-//				g2.lineStyle(2,0xFF0000);
+				if(debug)  g.lineStyle( 2 );	// black 2pix
+
 				e.rects.forEach( function( r :Rectangle, idx :int, arr :Array ) :void {
 					
 					rectCentre = new Point(r.x+(r.width*.5),r.y+(r.height*.5));
 					
-	//				_faceMask.width = _faceMask.height = (r.width* scaleFactor)+200;
-//					_faceMask.x = (rectCentre.x* scaleFactor);
-//					_faceMask.y = (rectCentre.y* scaleFactor)*.9;
+
 					
 					TweenMax.allTo([_faceMask, _faceRim], .5, {x:rectCentre.x*scaleFactor, y:(rectCentre.y*scaleFactor)*.9,  ease:Sine.easeInOut});		
 					TweenMax.to(_faceMask, .75, {width:(r.width* scaleFactor)+200, height:(r.width* scaleFactor)+200, ease:Sine.easeInOut});
@@ -159,11 +162,9 @@ package
 					
 					TweenMax.to(_faceRim,.25,{removeTint:true});
 
-				//	eyeAreaH = r.height*.2;
-					//var eyeRect:Rectangle = new Rectangle(r.x * scaleFactor, (r.y * scaleFactor)+(r.height*scaleFactor)*.26, r.width * scaleFactor, eyeAreaH * scaleFactor );
 
-				//	g.drawRect( r.x * scaleFactor, r.y * scaleFactor, r.width * scaleFactor, r.height * scaleFactor );
-				//	g2.drawRect( eyeRect.x, eyeRect.y, eyeRect.width, eyeRect.height);			
+					if(debug) 	g.drawRect( r.x * scaleFactor, r.y * scaleFactor, r.width * scaleFactor, r.height * scaleFactor );
+		
 				});	
 			}else{
 				TweenMax.to(_faceRim,.25,{tint:0x000000, scaleX:1, scaleY:1,ease:Sine.easeInOut});

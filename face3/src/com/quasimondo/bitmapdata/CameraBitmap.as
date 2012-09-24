@@ -33,18 +33,22 @@ package com.quasimondo.bitmapdata
 		private var __colorTransform:ColorTransform;
 		private var __colorMatrix:Array;
 		private var __colorMatrixFilter:ColorMatrixFilter = new ColorMatrixFilter();
-		
+		private var __flip:Boolean;
+
 		private const CAMERA_DELAY:int = 100;
 		private const origin:Point = new Point();
 		
-		public function CameraBitmap( width:int, height:int, refreshRate:int = 15, cameraWidth:int = -1, cameraHeight:int = -1 )
+		public function CameraBitmap( width:int, height:int, refreshRate:int = 15, flip:Boolean=false, cameraWidth:int = -1, cameraHeight:int = -1 )
 		{
 			__width  = width;
 			__height = height;
 			
+			__flip = flip;
+			
 			bitmapData = new BitmapData( width, height, false, 0 );
 			
 			__cam = Camera.getCamera();
+			
 			if ( cameraWidth == -1 || cameraHeight == -1 )
 			{
 				__cam.setMode( width, height, refreshRate, true );
@@ -87,9 +91,18 @@ package com.quasimondo.bitmapdata
 		private function cameraInit():void
 		{
 			__video = new Video( __cam.width, __cam.height );
+
 			__video.attachCamera( __cam );
-			
+						
 			__paintMatrix = new Matrix( __width / __cam.width, 0, 0, __height / __cam.height, 0, 0 );
+			
+			if(__flip)
+			{
+				__paintMatrix.scale(1,-1);
+				__paintMatrix.translate(0,bitmapData.height);
+			}
+
+			
 			__smooth = __paintMatrix.a != 1 || __paintMatrix.d != 1
 			
 			__timer = new Timer( 1000 / __refreshRate );
