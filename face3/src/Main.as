@@ -9,6 +9,7 @@ package
 	import flash.display.BitmapData;
 	import flash.display.Graphics;
 	import flash.display.Sprite;
+	import flash.display.Stage;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
@@ -21,7 +22,9 @@ package
 	import jp.maaash.ObjectDetection.ObjectDetectorEvent;
 	import jp.maaash.ObjectDetection.ObjectDetectorOptions;
 	
-	[SWF(width="607", height="1080", frameRate="60", backgroundColor="#FFFFFF")]
+	import rhythm.utils.CameraMotionDetect;
+	
+	[SWF(width="607", height="1080", frameRate="60", backgroundColor="0x4A4A4A")]
 	
 	public class Main extends Sprite
 	{
@@ -45,8 +48,12 @@ package
 		private var eyesRect:Sprite;
 		private var _faceMask:Sprite;
 		private var _faceRim:Sprite;
+		private var _detected:Boolean;
+		private var _motionDetector:CameraMotionDetect;
 		
 		public var debug:Boolean;
+		private var _movingShapes:Sprite;
+
 		
 		
 		public function Main() 
@@ -57,7 +64,8 @@ package
 			stage.align = StageAlign.TOP_LEFT;
 			
 			setUpCam();
-			initDetector();			
+			//initDetector();	
+		
 		}
 		
 
@@ -70,7 +78,7 @@ package
 			
 			TweenMax.to(_camOutput, 1, {colorMatrixFilter:{saturation:0, contrast:1.6}});
 			
-			addChild(_camOutput);
+			//addChild(_camOutput);
 			
 			//camera bitmap
 			cameraDetectionBitmap = new CameraBitmap( h, w, 30, true );
@@ -95,7 +103,7 @@ package
 			faceCircleShape.x = faceCircleShape.y = -100;
 			_faceMask.addChild(faceCircleShape);
 			
-			_camOutput.mask = _faceMask;
+			//_camOutput.mask = _faceMask;
 			
 			//facerim
 			_faceRim = new Sprite();
@@ -104,25 +112,33 @@ package
 			faceRimShape.graphics.drawEllipse(0,0,200,200);
 			faceRimShape.x = faceRimShape.y = -100;
 			_faceRim.addChild(faceRimShape);
+			_faceRim.visible=false;
+			
 			
 			addChild(_faceRim);
+			
+			//temp face centering
+			_faceRim.x = _faceMask.x=300;
+			_faceRim.y = _faceMask.y=500;
 			
 			//debug 
 			if(debug)
 			{
 				faceRectContainer = new Sprite();
 				addChild( faceRectContainer );			
-			}
-	
-			
+			}	
 		}
 		
-
+		
 		
 		private function cameraReadyHandler( event:Event ):void
 		{
-			detectionMap.draw(cameraDetectionBitmap.bitmapData,drawMatrix,null,"normal",null,true);
-			detector.detect( detectionMap );			
+			//detectionMap.draw(cameraDetectionBitmap.bitmapData,drawMatrix,null,"normal",null,true);
+			//detector.detect( detectionMap );	
+			
+			detectMotionMode();
+			trackMotion();
+
 		}
 		
 		private function initDetector():void
@@ -148,15 +164,27 @@ package
 			
 			if( e.rects.length>0 )
 			{
+				if(!_detected)
+				{
+					//turn off motion tracking
+					_faceMask.visible = _faceRim.visible = true;
+					_camOutput.mask = _faceMask;
+				//	TweenMax.allTo([_faceRim, _faceMask],.5,{scaleX:3,scaleY:3,ease:Sine.easeIn});
+				}
+				
+				
+				_detected=true;
+				
 				if(debug)  g.lineStyle( 2 );	// black 2pix
 
 				e.rects.forEach( function( r :Rectangle, idx :int, arr :Array ) :void {
 					
 					rectCentre = new Point(r.x+(r.width*.5),r.y+(r.height*.5));
 					
+					TweenMax.to(_camOutput,.75,{x:-((r.x)*scaleFactor)+150, y:-((r.y)*scaleFactor)+1500, ease:Sine.easeInOut});
 
 					
-					TweenMax.allTo([_faceMask, _faceRim], .5, {x:rectCentre.x*scaleFactor, y:(rectCentre.y*scaleFactor)*.9,  ease:Sine.easeInOut});		
+				//	TweenMax.allTo([_faceMask, _faceRim], .5, {x:rectCentre.x*scaleFactor, y:(rectCentre.y*scaleFactor)*.9,  ease:Sine.easeInOut});		
 					TweenMax.to(_faceMask, .75, {width:(r.width* scaleFactor)+200, height:(r.width* scaleFactor)+200, ease:Sine.easeInOut});
 					TweenMax.to( _faceRim, .75, {width:(r.width* scaleFactor)+205, height:(r.width* scaleFactor)+205, ease:Sine.easeInOut});
 					
@@ -167,10 +195,75 @@ package
 		
 				});	
 			}else{
-				TweenMax.to(_faceRim,.25,{tint:0x000000, scaleX:1, scaleY:1,ease:Sine.easeInOut});
-				TweenMax.to(_faceMask,.25,{scaleX:1,scaleY:1, ease:Sine.easeInOut});
 
+				if(_detected)
+				{
+					TweenMax.allTo([_faceRim,_faceMask],.75,{tint:0x000000, scaleX:3, scaleY:3, ease:Back.easeIn, onComplete:eyeShrunk});	
+					TweenMax.to(_camOutput,.75,{x:0 ,y:1080, ease:Sine.easeIn});
+					
+					detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
+
+				}
+				_detected = false;
+				trackMotion();
+
+				//TweenMax.to(_faceMask,.25,{scaleX:.25,scaleY:1, ease:Sine.easeInOut});
 			}
+		}
+		
+		private function eyeShrunk():void
+		{
+			trace("eyeShrunk");
+			_faceRim.visible = _faceMask.visible = false;
+			_camOutput.x=0;
+			_camOutput.y = 1080;
+			_camOutput.mask=null;
+			
+			detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
+
+		}
+		
+		
+		private function trackMotion():void
+		{
+			//var movementAreas:Vector.<Point>= new Vector.<Point>;
+//			_motionDetector ?  movementAreas = _motionDetector.getDifferences() : detectMotionMode();
+			
+			var activeCols:Vector.<int> = new Vector.<int>;
+			_motionDetector ?  activeCols = _motionDetector.detectPerson() : detectMotionMode();
+
+			
+//			for(var i:int =0; i<activeCols.length; i++)
+//			{
+//				
+//			}
+			
+//			_movingShapes.graphics.clear()
+//			
+//			for(var i:int =0; i<movementAreas.length; i++)
+//			{
+//				var p:Point = movementAreas[i];
+//				_movingShapes.graphics.beginFill(0xFFFFFF);
+//				_movingShapes.graphics.drawRect(p.x,p.y,5,5);
+//	//			_movingShapes.graphics.lineStyle(4000/i,0xFFFFFF,1,true,"normal","square");
+////				_movingShapes.graphics.lineTo(p.x,p.y);
+//			}
+			
+		}
+		
+		private function detectMotionMode():void
+		{
+			if(!_motionDetector){
+				_motionDetector = new CameraMotionDetect(cameraDetectionBitmap.camVideo, 5, 700000);
+				
+				_movingShapes = new Sprite();
+				_movingShapes.y = _camOutput.y;
+				_movingShapes.rotation = _camOutput.rotation;
+				_movingShapes.scaleY = -1;
+				_movingShapes.x = 608;
+				addChild(_movingShapes);
+			}
+			
 		}
 	}
 }

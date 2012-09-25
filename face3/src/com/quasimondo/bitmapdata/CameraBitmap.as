@@ -19,12 +19,12 @@ package com.quasimondo.bitmapdata
 		[Event(name="Event.RENDER", type="flash.events.Event")]
 
 		public var bitmapData:BitmapData;
-		
+		public var camVideo:Video;
+
 		private var __width:int;
 		private var __height:int;
 		
 		private var __cam:Camera;
-		private var __video:Video;
 		
 		private var __refreshRate:int;
 		private var __timer:Timer;
@@ -68,8 +68,8 @@ package com.quasimondo.bitmapdata
 		public function close():void
 		{
 			active = false;
-			__video.attachCamera(null);
-			__video = null;
+			camVideo.attachCamera(null);
+			camVideo = null;
 			__cam = null;
 		}
 		public function set refreshRate( value:int ):void
@@ -90,9 +90,9 @@ package com.quasimondo.bitmapdata
 		
 		private function cameraInit():void
 		{
-			__video = new Video( __cam.width, __cam.height );
+			camVideo = new Video( __cam.width, __cam.height );
 
-			__video.attachCamera( __cam );
+			camVideo.attachCamera( __cam );
 						
 			__paintMatrix = new Matrix( __width / __cam.width, 0, 0, __height / __cam.height, 0, 0 );
 			
@@ -101,7 +101,6 @@ package com.quasimondo.bitmapdata
 				__paintMatrix.scale(1,-1);
 				__paintMatrix.translate(0,bitmapData.height);
 			}
-
 			
 			__smooth = __paintMatrix.a != 1 || __paintMatrix.d != 1
 			
@@ -113,7 +112,7 @@ package com.quasimondo.bitmapdata
 		private function paint( event:TimerEvent = null ):void
 		{
 			bitmapData.lock();
-			bitmapData.draw ( __video, __paintMatrix, __colorTransform, "normal", null, __smooth );
+			bitmapData.draw ( camVideo, __paintMatrix, __colorTransform, "normal", null, __smooth );
 			if ( __colorMatrix != null )
 			{
 				bitmapData.applyFilter( bitmapData, bitmapData.rect, origin, __colorMatrixFilter );
