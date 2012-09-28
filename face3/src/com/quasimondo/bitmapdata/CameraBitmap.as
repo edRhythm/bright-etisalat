@@ -14,6 +14,8 @@ package com.quasimondo.bitmapdata
 	import flash.utils.Timer;
 	import flash.utils.setTimeout;
 	
+	import rhythm.utils.events.CustomEvent;
+	
 	public class CameraBitmap extends EventDispatcher
 	{
 		[Event(name="Event.RENDER", type="flash.events.Event")]
@@ -34,11 +36,17 @@ package com.quasimondo.bitmapdata
 		private var __colorMatrix:Array;
 		private var __colorMatrixFilter:ColorMatrixFilter = new ColorMatrixFilter();
 		private var __flip:Boolean;
+		private var _infoPanel:InfoPanel;
 
 		private const CAMERA_DELAY:int = 100;
 		private const origin:Point = new Point();
 		
-		public function CameraBitmap( width:int, height:int, refreshRate:int = 15, flip:Boolean=false, cameraWidth:int = -1, cameraHeight:int = -1 )
+		public function CameraBitmap()
+		{
+			
+		}
+		
+		public function setCamera(camID:int, width:int, height:int, refreshRate:int = 15, flip:Boolean=false):void
 		{
 			__width  = width;
 			__height = height;
@@ -47,17 +55,20 @@ package com.quasimondo.bitmapdata
 			
 			bitmapData = new BitmapData( width, height, false, 0 );
 			
-			__cam = Camera.getCamera();
+			__cam = Camera.getCamera(String(camID));
+
+			__cam.setMode( width, height, refreshRate, true );
 			
-			if ( cameraWidth == -1 || cameraHeight == -1 )
-			{
-				__cam.setMode( width, height, refreshRate, true );
-			} else {
-				__cam.setMode( cameraWidth, cameraHeight, refreshRate, true );
-			}
+			trace("__cam.width",__cam.width,"\n __cam.height",__cam.height)
+			
 			__refreshRate = refreshRate;
-			
+						
 			setTimeout( cameraInit, CAMERA_DELAY );
+		}
+		
+		public function getCameras():Array
+		{			
+			return Camera.names;
 		}
 		
 		public function set active( value:Boolean ):void
@@ -91,6 +102,7 @@ package com.quasimondo.bitmapdata
 		private function cameraInit():void
 		{
 			camVideo = new Video( __cam.width, __cam.height );
+		//	camVideo = new Video(1080, 1920);
 
 			camVideo.attachCamera( __cam );
 						
