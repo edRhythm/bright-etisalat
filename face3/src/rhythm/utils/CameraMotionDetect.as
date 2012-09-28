@@ -1,6 +1,8 @@
 package rhythm.utils
 {
 	
+	import com.quasimondo.bitmapdata.ThresholdBitmap;
+	
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Sprite;
@@ -9,7 +11,7 @@ package rhythm.utils
 	import flash.media.Camera;
 	import flash.media.Video;
 	import flash.utils.getDefinitionByName;
-	import com.quasimondo.bitmapdata.ThresholdBitmap;
+	import flash.geom.Matrix;
 	
 	public class CameraMotionDetect extends Sprite
 	{	
@@ -28,14 +30,22 @@ package rhythm.utils
 		private var video:Video;
 		
 		private var thresholdMap:ThresholdBitmap;
+		private var shrinkMatrix:Matrix;
+		private var scaleFactor:Number;
+		
 		public function CameraMotionDetect ( argVideo:Video , argBlockSize:Number , argSensitivity:Number ){
 		
 			video = argVideo;
 			blockSize = argBlockSize;
 			sensitivity = argSensitivity;
+			
+			scaleFactor = 1;
 					
-			oldData = new BitmapData( video.width , video.height , false );
-			newData = new BitmapData( video.width , video.height , false );            		
+			oldData = new BitmapData( video.width/scaleFactor , video.height/scaleFactor , false );
+			newData = new BitmapData( video.width/scaleFactor , video.height/scaleFactor , false );       
+			
+			shrinkMatrix = new Matrix( 1/ scaleFactor, 0, 0, 1 / scaleFactor );
+
 		}
 
 	
@@ -43,8 +53,8 @@ package rhythm.utils
 		{			
 			// capturing new state
 			
-			newData.draw( video );
-			
+			newData.draw( video, shrinkMatrix );
+			//trace("newData width",newData.width);
 			
 			var differences:Vector.<Point> = new Vector.<Point>;
 			
@@ -80,48 +90,7 @@ package rhythm.utils
 			
 		}	
 		
-		public function detectPerson():Array
-		{
-			var rect:Rectangle = new Rectangle(0,0,0,0);
-			var minRect:Rectangle = new Rectangle(0,0,20, 20);
-			var minGap:int = 3;
-			var rects:Array = [];
-			
-			var points:Vector.<Point> = getDifferences();
-			var currentX:int;
-			var currentY:int;
-			var yPointsFound:int;
-			var startY:int;
-			
-			for(var p:int = 0; p<points.length; p++)
-			{
-				 currentX = points[p].x;
-				 currentY = points[p].y;
-				 yPointsFound=1;
-				
-				for(var q:int = 0; q<points.length; q++)
-				{
-					if(yPointsFound==1)startY=currentY;
-					
-					if(points[q].x==currentX && (points[q].y - (minGap*yPointsFound)) <= currentY)
-					{
-						yPointsFound++;
-					}else{
-						break;
-					}
-				}
-				
-				if(yPointsFound>1 && (blockSize*yPointsFound)>minRect.height) 
-				{
-					rect = new Rectangle(currentX,startY,blockSize, blockSize*yPointsFound);
-					rects.push(rect);
-				}
-				
-			}
-			
-			return rects;
-
-		}
+		
 	}
 }
 
