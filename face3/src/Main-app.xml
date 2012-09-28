@@ -15,14 +15,14 @@
 
 	<!-- A universally unique application identifier. Must be unique across all AIR applications.
 	Using a reverse DNS-style name as the id is recommended. (Eg. com.example.ExampleApplication.) Required. -->
-	<id>Main</id>
+	<id>FaceTracker</id>
 
 	<!-- Used as the filename for the application. Required. -->
-	<filename>Main</filename>
+	<filename>FaceTracker</filename>
 
 	<!-- The name that is displayed in the AIR application installer. 
 	May have multiple values for each language. See samples or xsd schema file. Optional. -->
-	<name>Main</name>
+	<name>FaceTracker</name>
 	
 	<!-- A string value of the format <0-999>.<0-999>.<0-999> that represents application version which can be used to check for application upgrade. 
 	Values can also be 1-part or 2-part. It is not necessary to have a 3-part value.
@@ -52,7 +52,7 @@
 		<!-- <title></title> -->
 
 		<!-- The type of system chrome to use (either "standard" or "none"). Optional. Default standard. -->
-		<!-- <systemChrome></systemChrome> -->
+		<systemChrome>standard</systemChrome>
 
 		<!-- Whether the window is transparent. Only applicable when systemChrome is none. Optional. Default false. -->
 		<!-- <transparent></transparent> -->
@@ -61,13 +61,13 @@
 		<!-- <visible></visible> -->
 
 		<!-- Whether the user can minimize the window. Optional. Default true. -->
-		<!-- <minimizable></minimizable> -->
+		<!-- <minimizable>false</minimizable> -->
 
 		<!-- Whether the user can maximize the window. Optional. Default true. -->
-		<!-- <maximizable></maximizable> -->
+		<!-- <maximizable>false</maximizable> -->
 
 		<!-- Whether the user can resize the window. Optional. Default true. -->
-		<!-- <resizable></resizable> -->
+		<!-- <resizable>false</resizable> -->
 
 		<!-- The window's initial width in pixels. Optional. -->
 		<!-- <width></width> -->
@@ -76,10 +76,10 @@
 		<!-- <height></height> -->
 
 		<!-- The window's initial x position. Optional. -->
-		<!-- <x></x> -->
+		<x>0</x>
 
 		<!-- The window's initial y position. Optional. -->
-		<!-- <y></y> -->
+		<y>0</y>
 
 		<!-- The window's minimum size, specified as a width/height pair in pixels, such as "400 200". Optional. -->
 		<!-- <minSize></minSize> -->
@@ -89,7 +89,7 @@
 
         <!-- The initial aspect ratio of the app when launched (either "portrait" or "landscape"). Optional. Mobile only. Default is the natural orientation of the device -->
 
-        <!-- <aspectRatio></aspectRatio> -->
+        <!-- <aspectRatio>portrait</aspectRatio> -->
 
         <!-- Whether the app will begin auto-orienting on launch. Optional. Mobile only. Default false -->
 
@@ -101,11 +101,11 @@
 
         <!-- The render mode for the app (either auto, cpu, gpu, or direct). Optional. Default auto -->
 
-        <!-- <renderMode></renderMode> -->
+        <!-- <renderMode>direct</renderMode> -->
 
 		<!-- Whether or not to pan when a soft keyboard is raised or lowered (either "pan" or "none").  Optional.  Defaults "pan." -->
 		<!-- <softKeyboardBehavior></softKeyboardBehavior> -->
-	<autoOrients>false</autoOrients>
+	<autoOrients>true</autoOrients>
         <fullScreen>false</fullScreen>
         <visible>true</visible>
     </initialWindow>

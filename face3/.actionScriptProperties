@@ -44,12 +44,14 @@
   <flashCatalyst validateFlashCatalystCompatibility="false"/>
   <buildTargets>
     <buildTarget buildTargetName="default">
-      <airSettings airCertificatePath="" airTimestamp="true" anePathSet="true" version="1">
-        <airExcludes/>
+      <airSettings airCertificatePath="/Users/ed/Documents/work/Rhythm/bright digital/etisalat 2012/face3/cert.p12" airTimestamp="true" anePathSet="true" version="1">
+        <airExcludes>
+          <pathEntry path="away3d"/>
+          <pathEntry path=".DS_Store"/>
+        </airExcludes>
         <anePaths/>
       </airSettings>
       <actionScriptSettings version="1"/>
     </buildTarget>
   </buildTargets>
 </actionScriptProperties>
-
