@@ -47,8 +47,8 @@ package
 		private var cameraDetectionBitmap:CameraBitmap;
 		private var detectionMap:BitmapData;
 		private var drawMatrix:Matrix;
-		private var scaleFactor:int = 8;
-		private var dScaleFactor:int = 32;
+		private var scaleFactor:int = 14;
+		private var dScaleFactor:int = 56//32;
 
 		private var w:int = 520;
 		private var h:int = 960;
@@ -71,12 +71,14 @@ package
 		private var trackerShape:Sprite;
 		private var _infoPanel:Sprite;
 		private var minMaxRect:Sprite;
+		private var _faceDetection:Boolean;
 
 		
 		
 		public function Main() 
 		{
 			debug = true;
+			_faceDetection = true;
 			
 			stage.align = StageAlign.TOP_LEFT;
 						
@@ -99,13 +101,15 @@ package
 			_camOutput.y = dh;
 			_camOutput.rotation = -90;
 			_camOutput.scaleX = _camOutput.scaleY = 2;
-			
-			TweenMax.to(_camOutput, 1, {colorMatrixFilter:{saturation:0, contrast:1.6}});
-			
+		
 			addChildAt(_camOutput,0);
 			
 			//camera bitmap
 			cameraDetectionBitmap = new CameraBitmap();
+			
+			//bw filter (might speed things up doing it this way rather than tweenmax, but who knows?
+			cameraDetectionBitmap.colorMatrix = [0.445, 0.58, 0.18, 0, 0,0.445, 0.58, 0.18, 0, 0,0.445, 0.58, 0.18, 0, 0,0,    0,    0,    1, 0];
+	
 			showCameraInfo();
 			cameraDetectionBitmap.addEventListener( Event.RENDER, cameraReadyHandler );
 			
@@ -186,7 +190,7 @@ package
 		{
 			trace("clicked:",e.target.id);
 			
-			cameraDetectionBitmap.setCamera(e.target.id, h, w, 20, true);
+			cameraDetectionBitmap.setCamera(e.target.id, h, w, 30, true);
 			_camOutput.addChild( new Bitmap( cameraDetectionBitmap.bitmapData));
 			removeChild(_infoPanel);
 			
@@ -198,12 +202,15 @@ package
 		private function cameraReadyHandler( event:Event ):void
 		{
 			//start face detection
-		//	detectionMap.draw(cameraDetectionBitmap.bitmapData,drawMatrix,null,"normal",null,true);
-		//	detector.detect( detectionMap );	
 			
-			detectMotionMode();
-			trackMotion();
-		
+			if(_faceDetection)
+			{
+				detectionMap.draw(cameraDetectionBitmap.bitmapData,drawMatrix,null,"normal",null,true);
+				detector.detect( detectionMap );	
+			}else{
+				detectMotionMode();
+				trackMotion();
+			}
 		}
 		
 		private function initDetector():void
@@ -212,8 +219,10 @@ package
 			
 			var options:ObjectDetectorOptions = new ObjectDetectorOptions();
 			options.min_size  = 30;
+			//options.scale_factor = .5;
 
 			detector.options = options;
+			
 			detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
 		}
 		
@@ -298,21 +307,20 @@ package
 		private function trackMotion():void
 		{
 			var movementAreas:Vector.<Point> = _motionDetector.getDifferences();
-			
-			var thresholdMatrix:Matrix = new Matrix( 1, 0, 0, -1, 0, motionAreas.height);
-			
-			motionAreas.draw(motionAreas, thresholdMatrix);
+				
 			motionAreas.fillRect(motionAreas.rect, 0);
 
 			for(var i:int = 0; i<movementAreas.length; i++)
 			{
 				var p:Point = movementAreas[i];
-				motionAreas.fillRect(new Rectangle(p.x,p.y,10,10),0xFFFF0000);
+				motionAreas.fillRect(new Rectangle(p.x,w-p.y,10,10),0xFFFFFF);
+
 			}		
 			
-			thresholdMap.render();
+		//	thresholdMap.render();
 			 
-			var blobArea:Rectangle = thresholdMap.getColorBoundsRect(0xFFFFFF, 0xFFFFFF, true);
+//			var blobArea:Rectangle = thresholdMap.getColorBoundsRect(0xFFFFFF, 0xFFFFFF, true);
+			var blobArea:Rectangle = motionAreas.getColorBoundsRect(0xFFFFFF, 0xFFFFFF, true);
 
 			trackShape(blobArea);
 		}
@@ -380,25 +388,20 @@ package
 		private function detectMotionMode():void
 		{
 			if(!_motionDetector){
-				_motionDetector = new CameraMotionDetect(cameraDetectionBitmap.camVideo, 5, 2000000);
+				_motionDetector = new CameraMotionDetect(cameraDetectionBitmap.camVideo, 5, 3000000);
+
+				motionAreas = new BitmapData(h, w, false, 0x000000);	
 				
-//				_movingShapes = new Sprite();
-//				_movingShapes.scaleX = _movingShapes.scaleY = 2;
-				motionAreas = new BitmapData(h, w, false, 0x000000);				
+				//motionAreas.draw(motionAreas);
+				
 				thresholdMap = new ThresholdBitmap( motionAreas);
-				
-				thresholdMap.smooth = 0//16;
-				
-				thresholdMap.adaptiveTolerance = 255;
-				thresholdMap.thresholdValue = 255;
-				thresholdMap.adaptiveRadius = 20;
-			
+
 				if(debug)
 				{
 					var tbm:Bitmap = new Bitmap( motionAreas );
 
-			//		var tbm:Bitmap = new Bitmap( thresholdMap );
-					tbm.alpha=.5
+//					var tbm:Bitmap = new Bitmap( thresholdMap );
+					tbm.alpha=.5;
 					_camOutput.addChild( tbm );
 				}
 				

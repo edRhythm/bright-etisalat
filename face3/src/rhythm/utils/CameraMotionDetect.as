@@ -39,7 +39,7 @@ package rhythm.utils
 			blockSize = argBlockSize;
 			sensitivity = argSensitivity;
 			
-			scaleFactor = 1;
+			scaleFactor = 8;
 					
 			oldData = new BitmapData( video.width/scaleFactor , video.height/scaleFactor , false );
 			newData = new BitmapData( video.width/scaleFactor , video.height/scaleFactor , false );       
@@ -77,7 +77,7 @@ package rhythm.utils
 					if ( Math.abs( newPixel - oldPixel ) > sensitivity )
 					{						
 						// if bigger than sensitivity, storing point	
-						differences.push( new Point( px , py ) );				
+						differences.push( new Point( px*scaleFactor , py*scaleFactor ) );				
 					}			
 				}		
 			}

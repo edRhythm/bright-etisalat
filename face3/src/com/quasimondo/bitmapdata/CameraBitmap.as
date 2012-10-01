@@ -102,7 +102,6 @@ package com.quasimondo.bitmapdata
 		private function cameraInit():void
 		{
 			camVideo = new Video( __cam.width, __cam.height );
-//			camVideo = new Video(1080, 1920);
 
 			camVideo.attachCamera( __cam );
 						
