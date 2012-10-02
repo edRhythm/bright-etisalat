@@ -46,7 +46,6 @@ package
 		
 		private var cameraDetectionBitmap:CameraBitmap;
 		private var detectionMap:BitmapData;
-		private var drawMatrix:Matrix;
 		private var scaleFactor:int = 14;
 		private var dScaleFactor:int = 56//32;
 
@@ -55,6 +54,8 @@ package
 		private var dw:int = 1080;
 		private var dh:int = 1920;
 		private var rectCentre:Point;
+		private var dectAreaW:int=400;
+		private var dectAreaH:int=600;
 		
 		private var eyesRect:Sprite;
 		private var _faceMask:Sprite;
@@ -72,6 +73,10 @@ package
 		private var _infoPanel:Sprite;
 		private var minMaxRect:Sprite;
 		private var _faceDetection:Boolean;
+
+		private var bdata:BitmapData;
+
+		private var dectMatrix:Matrix;
 
 		
 		
@@ -101,6 +106,7 @@ package
 			_camOutput.y = dh;
 			_camOutput.rotation = -90;
 			_camOutput.scaleX = _camOutput.scaleY = 2;
+			TweenMax.to(_camOutput,0,{colorMatrixFilter:{saturation:0}});
 		
 			addChildAt(_camOutput,0);
 			
@@ -108,17 +114,20 @@ package
 			cameraDetectionBitmap = new CameraBitmap();
 			
 			//bw filter (might speed things up doing it this way rather than tweenmax, but who knows?
-			cameraDetectionBitmap.colorMatrix = [0.445, 0.58, 0.18, 0, 0,0.445, 0.58, 0.18, 0, 0,0.445, 0.58, 0.18, 0, 0,0,    0,    0,    1, 0];
-	
+			//cameraDetectionBitmap.colorMatrix = [0.37, 0.615, 0.08, 0, 0,0.37, 0.615, 0.08, 0, 0,0.37, 0.615, 0.08, 0, 0,0,    0,    0,    1, 0];
+		
+			
 			showCameraInfo();
 			cameraDetectionBitmap.addEventListener( Event.RENDER, cameraReadyHandler );
 			
 			//detection bitmap
-			detectionMap = new BitmapData( w / scaleFactor, h / scaleFactor, false, 0 );
-			drawMatrix = new Matrix( 1/ scaleFactor, 0, 0, 1 / scaleFactor );
-			drawMatrix.rotate( -90 * (Math.PI / 180 ) );
-			drawMatrix.translate( 0, detectionMap.height );
-				
+			detectionMap = new BitmapData( dectAreaW/scaleFactor , dectAreaH/scaleFactor , false, 0 );
+		
+			dectMatrix = new Matrix( 1/scaleFactor, 0, 0, 1/scaleFactor  );
+			dectMatrix.rotate( -90 * (Math.PI / 180 ) );
+			dectMatrix.translate( 0, h/scaleFactor);
+
+			
 			eyesRect = new Sprite();
 			addChild( eyesRect );
 			
@@ -187,25 +196,43 @@ package
 		}
 		
 		private function doCamSelect(e:MouseEvent):void
-		{
-			trace("clicked:",e.target.id);
-			
+		{		
 			cameraDetectionBitmap.setCamera(e.target.id, h, w, 30, true);
 			_camOutput.addChild( new Bitmap( cameraDetectionBitmap.bitmapData));
-			removeChild(_infoPanel);
-			
+			removeChild(_infoPanel);			
 		}		
 
 		
 		
 		
 		private function cameraReadyHandler( event:Event ):void
-		{
+		{			
 			//start face detection
 			
 			if(_faceDetection)
 			{
-				detectionMap.draw(cameraDetectionBitmap.bitmapData,drawMatrix,null,"normal",null,true);
+				if(!bdata)
+				{
+					bdata = new BitmapData(w, h);
+				//	thresholdMap = new ThresholdBitmap( bdata);
+					//thresholdMap.smooth = 2;
+				}
+								
+				bdata.draw(cameraDetectionBitmap.bitmapData, dectMatrix);
+//				thresholdMap.render();
+
+			detectionMap.copyPixels(bdata, new Rectangle(75/scaleFactor,0,w/scaleFactor,h/scaleFactor), new Point(0,0));
+			//	detectionMap.copyPixels(thresholdMap, new Rectangle(75/scaleFactor,0,w/scaleFactor,h/scaleFactor), new Point(0,0));
+
+			
+				if(debug)
+				{
+					var tbm:Bitmap = new Bitmap( detectionMap );
+					tbm.scaleX = tbm.scaleY = scaleFactor; 
+					tbm.x = 300;
+					addChild( tbm );
+				}
+
 				detector.detect( detectionMap );	
 			}else{
 				detectMotionMode();
@@ -218,7 +245,7 @@ package
 			detector = new ObjectDetector();
 			
 			var options:ObjectDetectorOptions = new ObjectDetectorOptions();
-			options.min_size  = 30;
+			options.min_size  = 15;
 			//options.scale_factor = .5;
 
 			detector.options = options;
@@ -240,7 +267,7 @@ package
 				{
 					//turn off motion tracking
 					_faceMask.visible = _faceRim.visible = true;
-					_camOutput.mask = _faceMask;
+					//_camOutput.mask = _faceMask;
 					TweenMax.allTo([_faceRim, _faceMask],.5,{scaleX:3,scaleY:3,ease:Sine.easeIn});
 					
 					if(trackerShape)trackerShape.visible=false;
@@ -255,8 +282,12 @@ package
 					
 					rectCentre = new Point((r.x+(r.width*.5)),(r.y+(r.height*.5)));
 					
-					TweenMax.to(_camOutput,.75,{x:(-(r.x*dScaleFactor)+300), ease:Sine.easeInOut});
-					TweenMax.to(_camOutput,1.25,{ y:(-(r.y*dScaleFactor)+2700), ease:Sine.easeInOut});
+					if(!debug)
+					{
+						TweenMax.to(_camOutput,.75,{x:(-(r.x*dScaleFactor)+300), ease:Sine.easeInOut});
+						TweenMax.to(_camOutput,1.25,{ y:(-(r.y*dScaleFactor)+2700), ease:Sine.easeInOut});	
+					}
+					
 
 					
 				//	TweenMax.allTo([_faceMask, _faceRim], .5, {x:rectCentre.x*scaleFactor, y:(rectCentre.y*scaleFactor)*.9,  ease:Sine.easeInOut});		
@@ -394,7 +425,6 @@ package
 				
 				//motionAreas.draw(motionAreas);
 				
-				thresholdMap = new ThresholdBitmap( motionAreas);
 
 				if(debug)
 				{
