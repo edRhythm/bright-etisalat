@@ -14,7 +14,7 @@ package com.quasimondo.bitmapdata
 	import flash.utils.Timer;
 	import flash.utils.setTimeout;
 	
-	import rhythm.utils.events.CustomEvent;
+	import rhythm.events.CustomEvent;
 	
 	public class CameraBitmap extends EventDispatcher
 	{
