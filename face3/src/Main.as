@@ -34,6 +34,8 @@ package
 	import rhythm.utils.CameraMotionDetect;
 	import rhythm.utils.Maths;
 	
+	import tweetcloud.TweetCloud;
+	
 	[SWF(width="1080", height="1920", frameRate="30", backgroundColor="0x444444")]
 
 	public class Main extends Sprite
@@ -98,6 +100,14 @@ package
 		private var particleTints:Array;
 		private var trackMessage:MessageHarness;
 
+		private var tweetCloud:TweetCloud;
+
+		private var faceFor3d:BitmapData;
+		private var faceRect:Rectangle;
+
+		private var faceBMD:BitmapData;
+		private var faceMatrix:Matrix;
+
 		
 		
 		public function Main() 
@@ -114,12 +124,15 @@ package
 			stage.nativeWindow.height = stage.fullScreenHeight;
 			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
 			
-			var stats:Stats = new Stats() 
-			stats.scaleX = stats.scaleY = 2;
+			var stats:Stats = new Stats();
+			stats.y = 50;
+			//stats.scaleX = stats.scaleY = 2;
 			addChild( stats);
 			
 			setUpCam();
 			initDetector();		
+			
+
 		}
 		
 		
@@ -130,7 +143,7 @@ package
 			_camOutput.y = dh;
 			_camOutput.rotation = -90;
 			_camOutput.scaleX = _camOutput.scaleY = 2;
-		
+			//_camOutput.alpha = .2;
 			addChildAt(_camOutput,0);
 			
 			//camera bitmap
@@ -150,34 +163,16 @@ package
 			dectMatrix = new Matrix( 1/scaleFactor, 0, 0, 1/scaleFactor  );
 			dectMatrix.rotate( -90 * (Math.PI / 180 ) );
 			dectMatrix.translate( 0, h/scaleFactor);
+			
+			faceMatrix= new Matrix( 1, 0, 0, 1  );
+		//	faceMatrix.rotate( -90 * (Math.PI / 180 ) );
+			faceMatrix.translate( -256, 0);
 
 
-			//face detected mask
-			_faceMask = new Sprite();
-			var faceCircleShape:Sprite = new Sprite();
-			faceCircleShape.graphics.beginFill(0x000000);
-			faceCircleShape.graphics.drawEllipse(0,0,200,200);
-			faceCircleShape.graphics.endFill();
-			faceCircleShape.x = faceCircleShape.y = -100;
-			_faceMask.addChild(faceCircleShape);
-						
-			//facerim
-			_faceRim = new Sprite();
-			var faceRimShape:Sprite = new Sprite();
-			faceRimShape.graphics.lineStyle(5,0xC6CE2C,1,true);
-			faceRimShape.graphics.drawEllipse(0,0,200,200);
-			faceRimShape.x = faceRimShape.y = -100;
-			_faceRim.addChild(_faceMask);
-			_faceRim.addChild(faceRimShape);
-			_faceRim.visible=false;
-			
-			
-			addChild(_faceRim);
-			
-			// face centering
-			_faceRim.x = w;
-			_faceRim.y = h*.8
-			
+//			//face detected mask
+			faceRect = new Rectangle(0, 0, 512,512);
+
+
 			//motion tracking area
 			blobMaxW = dh*.8;
 			blobMinW = dh*.5;
@@ -190,6 +185,11 @@ package
 			//particle ease
 			roughEase = new RoughEase(3, 10, false, Sine.easeIn, "none", true, "superRoughEase");
 			particleTints = [0x9dc880, 0x81c1e0, 0x2b3c46,0xec82ba,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF];
+
+			//3d
+			tweetCloud = new TweetCloud();
+			tweetCloud.init();
+			faceFor3d = new BitmapData(512,512);
 
 			
 			//debug 
@@ -208,6 +208,7 @@ package
 				if(!bdata)
 				{
 					bdata = new BitmapData(w, h);
+					faceBMD = new BitmapData(h, h, true, 0xFF0000);
 							
 					if(debug)
 					{
@@ -225,11 +226,21 @@ package
 				}
 								
 				bdata.draw(cameraDetectionBitmap.bitmapData, dectMatrix);
+				faceBMD.draw(_camHarness, faceMatrix);
 
 				detectionMap.copyPixels(bdata, new Rectangle(scaledXOffset,0,scaledDectW,scaledDectH), new Point(0,0));
 
 				detector.detect( detectionMap );	
 				
+				//send face to tweetcloud
+				faceFor3d.lock();
+				faceFor3d.fillRect(new Rectangle(0,0,faceFor3d.width, faceFor3d.height),0);
+
+				if(faceRect)faceFor3d.copyPixels(faceBMD,faceRect, new Point(0,0));
+				faceFor3d.unlock();
+				
+				tweetCloud.updateFace(faceFor3d);
+
 			}else{
 				detectMotionMode();
 				trackMotion();
@@ -258,60 +269,69 @@ package
 			
 			if(e.rects.length>0)
 			{
+				
+				
 				if(!_detected)
 				{
+					//start 3d 
+					tweetCloud.resume3d();			
+					if(tweetCloud.parent == null)addChild(tweetCloud);
+					_camOutput.visible=false;
+					
 					//stop calls to stopTracking
 					TweenMax.killDelayedCallsTo(stopFaceTracking);
 					
 					//turn off motion tracking
-					_faceMask.visible = _faceRim.visible = true;
-					_camOutput.mask = _faceMask;
-					TweenMax.to(_faceRim,.5,{scaleX:3,scaleY:3,ease:Sine.easeIn});
+				//	_faceMask.visible = _faceRim.visible = true;
+				//	_camOutput.mask = _faceMask;
+					//TweenMax.to(_faceRim,.5,{scaleX:3,scaleY:3,ease:Sine.easeIn});
 					
 					//shrink video and make b&w
-					TweenMax.to(_camHarness,.1,{transformAroundCenter:{scaleX:0.7, scaleY:0.7}});
+					//TweenMax.to(_camHarness,.1,{transformAroundCenter:{scaleX:0.7, scaleY:0.7}});
 					
 					TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:0.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});
 					
-					TweenMax.to( _faceRim, .75, {width:605, height:605, ease:Sine.easeInOut});
+				//	TweenMax.to( _faceRim, .75, {width:605, height:605, ease:Sine.easeInOut});
 				}
 				
 				hideTracker();
 				_trackMotion=false;
 				_detected=true;
 				
-				g.lineStyle( 2, 0xFF0000 );	// red 2pix
+				g.lineStyle( 2, 0xff6600 );	// red 2pix
 
 				e.rects.forEach( function( r :Rectangle, idx :int, arr :Array ) :void {
 					
 					rectCentre = new Point((r.x+(r.width*.5)),(r.y+(r.height*.5)));
 					
-					TweenMax.to(_camOutput,.75,{ x:0, ease:Sine.easeInOut});	
+//					faceRect = new Rectangle((r.y*-scaleFactor)+256, (r.x*scaleFactor), 512,512);
 
-					TweenMax.to(_camOutput,.75,{ y:(dh-(r.y*dScaleFactor))+(_faceRim.y*.7), ease:Sine.easeInOut});	
+					TweenMax.to(faceRect,.75,{x: (r.y*-scaleFactor)+256, y:r.x*scaleFactor});
+					
+					//TweenMax.to(_camOutput,.75,{ y:(dh-(r.y*dScaleFactor))+(_faceRim.y*.7), ease:Sine.easeInOut});	
 					
 					if(debug)
 					{
-						g.drawRect( -r.x * dScaleFactor, dh-(r.y*dScaleFactor), r.width * dScaleFactor, r.height * dScaleFactor );
+//						g.drawRect( r.x * dScaleFactor, dh-(r.y*dScaleFactor), r.width * dScaleFactor, r.height * dScaleFactor );
+						g.drawRect( faceRect.x,faceRect.y,faceRect.width,faceRect.height );
+
 					}	
 					
-					TweenMax.to(_faceRim,.25,{removeTint:true});
+				//	TweenMax.to(_faceRim,.25,{removeTint:true});
+					
 
-		
 				});	
 			}else{
 				
 				if(_detected) 
 				{
 					_detected = false;
-					TweenMax.delayedCall(2,stopFaceTracking);				
+					TweenMax.delayedCall(5,stopFaceTracking);				
 				}else if(_trackMotion){
+					
 					//start motion tracking
-					
 					if(!_motionDetector) detectMotionMode();
-					
-					//showTracker();
-					
+										
 					trackMotion();	
 				}
 				
@@ -321,7 +341,11 @@ package
 		
 		private function stopFaceTracking():void
 		{
-			TweenMax.to(_faceRim,.5,{tint:0x000000, scaleX:3, scaleY:3, ease:Back.easeIn});	
+			tweetCloud.pause3d();
+			_camOutput.visible=true;
+			//tweetCloud.remove3d();
+
+			//TweenMax.to(_faceRim,.5,{tint:0x000000, scaleX:3, scaleY:3, ease:Back.easeIn});	
 			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn, onComplete:eyeShrunk});
 				
 			TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, 
@@ -336,10 +360,10 @@ package
 		
 		private function eyeShrunk():void
 		{
-			_faceRim.visible = _faceMask.visible = false;
-			_camOutput.x = 0;
-			_camOutput.y = dh;
-			_camOutput.mask=null;
+			//_faceRim.visible = _faceMask.visible = false;
+			//_camOutput.x = 0;
+			//_camOutput.y = dh;
+			//_camOutput.mask=null;
 			
 			detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
 		}
@@ -359,6 +383,7 @@ package
 			var movementAreas:Vector.<Point> = _motionDetector.getDifferences();
 				
 			//clear bitmapdata
+			motionAreas.lock();
 			motionAreas.fillRect(motionAreas.rect, 0);
 
 			for(var i:int = 0; i<movementAreas.length; i++)
@@ -385,7 +410,9 @@ package
 					TweenMax.to(particle,Maths.randomIntBetween(10,100)*.01,{x:String(xTo),y:String(yTo),alpha:1,  ease:roughEase, onComplete:killParticle, onCompleteParams:[particle]});
 				}
 
-			}		
+			}	
+			
+			motionAreas.unlock();
 			
 			var blobArea:Rectangle = motionAreas.getColorBoundsRect(0xFFFFFF, 0xFFFFFF, true);
 
@@ -431,20 +458,10 @@ package
 			}
 			
 			if(blobAreaScaled.width>blobMinW && blobAreaScaled.width<blobMaxW && blobAreaScaled.height>blobMinH && blobAreaScaled.height<blobMaxH && blobAreaScaled.height<blobAreaScaled.width)
-			{		
-
-				
-//				TweenMax.to(trackerShape, .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),
-//					ease:Sine.easeInOut,
-//					onComplete:fadeOutTracker});
-//				
-//				TweenMax.to(trackerShape, .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut});
-				
-
+			{	
 				TweenMax.allTo([trackerShape, bigCross, trackMessage], .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),ease:Sine.easeInOut},0.25,fadeOutTracker);
 				
 				TweenMax.allTo([trackerShape, bigCross, trackMessage], .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut},0.25);
-				
 			}
 		}
 		
