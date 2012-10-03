@@ -107,6 +107,10 @@ package
 
 		private var faceBMD:BitmapData;
 		private var faceMatrix:Matrix;
+		
+		private var rimMask:RimMask;
+
+		private var tempFaceBMP:Bitmap;
 
 		
 		
@@ -143,7 +147,6 @@ package
 			_camOutput.y = dh;
 			_camOutput.rotation = -90;
 			_camOutput.scaleX = _camOutput.scaleY = 2;
-			//_camOutput.alpha = .2;
 			addChildAt(_camOutput,0);
 			
 			//camera bitmap
@@ -165,13 +168,11 @@ package
 			dectMatrix.translate( 0, h/scaleFactor);
 			
 			faceMatrix= new Matrix( 1, 0, 0, 1  );
-		//	faceMatrix.rotate( -90 * (Math.PI / 180 ) );
-			faceMatrix.translate( -256, 0);
+			faceMatrix.translate( -256, 35);
 
-
-//			//face detected mask
-			faceRect = new Rectangle(0, 0, 512,512);
-
+			//face detected mask
+			faceRect = new Rectangle(0, 0, 600,600);
+			rimMask = new RimMask();
 
 			//motion tracking area
 			blobMaxW = dh*.8;
@@ -189,7 +190,7 @@ package
 			//3d
 			tweetCloud = new TweetCloud();
 			tweetCloud.init();
-			faceFor3d = new BitmapData(512,512);
+			faceFor3d = new BitmapData(1024,1024);
 
 			
 			//debug 
@@ -208,7 +209,7 @@ package
 				if(!bdata)
 				{
 					bdata = new BitmapData(w, h);
-					faceBMD = new BitmapData(h, h, true, 0xFF0000);
+					faceBMD = new BitmapData(1024, 1024, true, 0xFF0000);
 							
 					if(debug)
 					{
@@ -236,7 +237,18 @@ package
 				faceFor3d.lock();
 				faceFor3d.fillRect(new Rectangle(0,0,faceFor3d.width, faceFor3d.height),0);
 
-				if(faceRect)faceFor3d.copyPixels(faceBMD,faceRect, new Point(0,0));
+//				if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,faceRect.y, 1000, 1000), new Point(0,0),rimMask);
+				if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,40, 2000, 2000), new Point(0,0),rimMask);
+
+//
+//				if(!tempFaceBMP)
+//				{
+//					tempFaceBMP=new Bitmap( faceFor3d );
+//					tempFaceBMP.alpha=.8;
+//					tempFaceBMP.y = 100;
+//					addChild(tempFaceBMP);
+//				}
+					 						
 				faceFor3d.unlock();
 				
 				tweetCloud.updateFace(faceFor3d);
@@ -273,6 +285,15 @@ package
 				
 				if(!_detected)
 				{
+					//kill partigen
+					while(particleHarness.numChildren>0) 
+					{
+						var p:ParticleCross = ParticleCross(particleHarness.getChildAt(0));
+						TweenMax.killTweensOf(p);
+						killParticle(ParticleCross(particleHarness.getChildAt(0)));
+					}
+					
+					
 					//start 3d 
 					tweetCloud.resume3d();			
 					if(tweetCloud.parent == null)addChild(tweetCloud);
@@ -280,18 +301,8 @@ package
 					
 					//stop calls to stopTracking
 					TweenMax.killDelayedCallsTo(stopFaceTracking);
-					
-					//turn off motion tracking
-				//	_faceMask.visible = _faceRim.visible = true;
-				//	_camOutput.mask = _faceMask;
-					//TweenMax.to(_faceRim,.5,{scaleX:3,scaleY:3,ease:Sine.easeIn});
-					
-					//shrink video and make b&w
-					//TweenMax.to(_camHarness,.1,{transformAroundCenter:{scaleX:0.7, scaleY:0.7}});
-					
-					TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:0.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});
-					
-				//	TweenMax.to( _faceRim, .75, {width:605, height:605, ease:Sine.easeInOut});
+								
+					TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:0.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});			
 				}
 				
 				hideTracker();
@@ -304,22 +315,15 @@ package
 					
 					rectCentre = new Point((r.x+(r.width*.5)),(r.y+(r.height*.5)));
 					
-//					faceRect = new Rectangle((r.y*-scaleFactor)+256, (r.x*scaleFactor), 512,512);
-
-					TweenMax.to(faceRect,.75,{x: (r.y*-scaleFactor)+256, y:r.x*scaleFactor});
+					//define face rect position
+					//trace("r",r);
 					
-					//TweenMax.to(_camOutput,.75,{ y:(dh-(r.y*dScaleFactor))+(_faceRim.y*.7), ease:Sine.easeInOut});	
-					
+					if(r.y>12 && r.y<23) TweenMax.to(faceRect,.75,{x: (r.y*-scaleFactor)+400, y:r.x*scaleFactor});
+					//trace("faceRect",faceRect);
 					if(debug)
 					{
-//						g.drawRect( r.x * dScaleFactor, dh-(r.y*dScaleFactor), r.width * dScaleFactor, r.height * dScaleFactor );
 						g.drawRect( faceRect.x,faceRect.y,faceRect.width,faceRect.height );
-
 					}	
-					
-				//	TweenMax.to(_faceRim,.25,{removeTint:true});
-					
-
 				});	
 			}else{
 				
@@ -343,9 +347,7 @@ package
 		{
 			tweetCloud.pause3d();
 			_camOutput.visible=true;
-			//tweetCloud.remove3d();
 
-			//TweenMax.to(_faceRim,.5,{tint:0x000000, scaleX:3, scaleY:3, ease:Back.easeIn});	
 			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn, onComplete:eyeShrunk});
 				
 			TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, 
@@ -360,11 +362,6 @@ package
 		
 		private function eyeShrunk():void
 		{
-			//_faceRim.visible = _faceMask.visible = false;
-			//_camOutput.x = 0;
-			//_camOutput.y = dh;
-			//_camOutput.mask=null;
-			
 			detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
 		}
 		

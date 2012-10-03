@@ -43,13 +43,13 @@ package tweetcloud.boxes
 			//mat.alpha = .87;
 			
 			plane.material = mat;
-			plane.material.bothSides = true;
+		//	plane.material.bothSides = true;
 		}
 		
 		public function updateFaceBMD(bmd:BitmapData):void
 		{	
 			finalBMD.lock();
-			finalBMD.fillRect(new Rectangle(0,0,finalBMD.width, finalBMD.height),0);
+			finalBMD.fillRect(new Rectangle(0,0,finalBMD.width, finalBMD.height),0xFFFFFF);
 			finalBMD.draw(bmd,faceMatrix);
 			finalBMD.unlock();
 

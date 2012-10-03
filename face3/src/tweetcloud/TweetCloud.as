@@ -161,8 +161,6 @@ package tweetcloud
 				removeEventListener(Event.ENTER_FRAME, onEnterFrame);
 				paused=true;
 			}
-
-			trace("tweet pause = ",paused);
 		}
 		
 		public function resume3d():void
@@ -171,10 +169,7 @@ package tweetcloud
 			{
 				addEventListener(Event.ENTER_FRAME, onEnterFrame);
 				paused=false;	
-
-			}
-			
-			trace("tweet pause = ",paused);
+			}		
 		}
 		
 		public function remove3d():void
