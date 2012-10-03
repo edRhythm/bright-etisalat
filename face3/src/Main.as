@@ -32,6 +32,7 @@ package
 	
 	import rhythm.events.CustomEvent;
 	import rhythm.utils.CameraMotionDetect;
+	import rhythm.utils.Maths;
 	
 	[SWF(width="1080", height="1920", frameRate="30", backgroundColor="0x444444")]
 
@@ -71,6 +72,7 @@ package
 
 		private var blobAreaRect:Sprite;
 		private var trackerShape:Sprite;
+		private var bigCross:BigCross;
 		private var _infoPanel:Sprite;
 		private var minMaxRect:Sprite;
 		private var _faceDetection:Boolean;
@@ -93,16 +95,19 @@ package
 		private var roughEase:RoughEase;
 		private var particleHarness:Sprite;
 
+		private var particleTints:Array;
+		private var trackMessage:MessageHarness;
+
 		
 		
 		public function Main() 
 		{
-			debug = true;
+			//debug = true;
 			_faceDetection = true;
 			
 			_trackMotion = true;
 			
-			TweenPlugin.activate([ShortRotationPlugin, TransformAroundPointPlugin, TransformAroundCenterPlugin]);
+			TweenPlugin.activate([ShortRotationPlugin, TransformAroundPointPlugin, TransformAroundCenterPlugin,BezierPlugin]);
 			
 			stage.align = StageAlign.TOP_LEFT;
 						
@@ -179,8 +184,12 @@ package
 			blobMaxH = dw*.65;
 			blobMinH = dw*.3;
 			
+			showTracker();
+			hideTracker();
+			
 			//particle ease
-			roughEase = new RoughEase(1.5, 30, true, Strong.easeOut, "none", true, "superRoughEase");
+			roughEase = new RoughEase(3, 10, false, Sine.easeIn, "none", true, "superRoughEase");
+			particleTints = [0x9dc880, 0x81c1e0, 0x2b3c46,0xec82ba,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF];
 
 			
 			//debug 
@@ -258,8 +267,6 @@ package
 					_faceMask.visible = _faceRim.visible = true;
 					_camOutput.mask = _faceMask;
 					TweenMax.to(_faceRim,.5,{scaleX:3,scaleY:3,ease:Sine.easeIn});
-				
-					if(trackerShape)trackerShape.visible=false;
 					
 					//shrink video and make b&w
 					TweenMax.to(_camHarness,.1,{transformAroundCenter:{scaleX:0.7, scaleY:0.7}});
@@ -269,6 +276,7 @@ package
 					TweenMax.to( _faceRim, .75, {width:605, height:605, ease:Sine.easeInOut});
 				}
 				
+				hideTracker();
 				_trackMotion=false;
 				_detected=true;
 				
@@ -302,7 +310,7 @@ package
 					
 					if(!_motionDetector) detectMotionMode();
 					
-					if(trackerShape)trackerShape.visible=true;
+					//showTracker();
 					
 					trackMotion();	
 				}
@@ -342,16 +350,15 @@ package
 			if(!particleHarness) 
 			{
 				addChild(particleHarness = new Sprite());
+				particleHarness.rotation=90;
+				particleHarness.y =  dh;
 				particleHarness.scaleX=-1;
 				particleHarness.scaleY=-1;
-				particleHarness.x = dw
-				particleHarness.y = dh
-					
-
 			}
 			
 			var movementAreas:Vector.<Point> = _motionDetector.getDifferences();
 				
+			//clear bitmapdata
 			motionAreas.fillRect(motionAreas.rect, 0);
 
 			for(var i:int = 0; i<movementAreas.length; i++)
@@ -360,16 +367,22 @@ package
 				motionAreas.fillRect(new Rectangle(p.x,w-p.y,10,10),0xFFFFFF);
 
 				//partigen
-				if(particleHarness.numChildren < 100000)
+				var pXPos:int = p.x*2
+				var pYPos:int = dw-(p.y)*2;
+
+				if(particleHarness.numChildren < 200)
 				{
-					//trace("p",p);
 					var particle:ParticleCross = new ParticleCross();
-					particle.x = (p.x*2);
-					particle.y = (p.y*2);
-					var xTo:int = particle.x//Math.random()*1080;
-					var yTo:int =particle.y//Math.random()*1920;
+
+					particle.scaleX = particle.scaleY=Maths.randomIntBetween(5,20)/10;
+					particle.alpha=0;
+					TweenMax.to(particle,0,{x:pXPos, y:pYPos, tint:particleTints[Maths.randomIntBetween(0,particleTints.length-1)]});
+					
+					var xTo:int = Maths.randomIntBetween(-250,250);
+					var yTo:int = Maths.randomIntBetween(-250,250);
 					particleHarness.addChild(particle);
-					TweenMax.to(particle,Math.random(),{x:xTo,y:yTo,ease:roughEase, onComplete:killParticle, onCompleteParams:[particle]});
+
+					TweenMax.to(particle,Maths.randomIntBetween(10,100)*.01,{x:String(xTo),y:String(yTo),alpha:1,  ease:roughEase, onComplete:killParticle, onCompleteParams:[particle]});
 				}
 
 			}		
@@ -385,6 +398,8 @@ package
 			particle = null;
 			
 		}
+		
+		
 			
 		private function trackShape(blobArea:Rectangle):void
 		{			
@@ -416,28 +431,51 @@ package
 			}
 			
 			if(blobAreaScaled.width>blobMinW && blobAreaScaled.width<blobMaxW && blobAreaScaled.height>blobMinH && blobAreaScaled.height<blobMaxH && blobAreaScaled.height<blobAreaScaled.width)
-			{
-				if(! trackerShape) 
-				{
-					trackerShape = new TrackerCross();
-					addChild(trackerShape);
-				}
+			{		
+
 				
-				trackerShape.visible = true;
-				trackerShape.alpha = 1;
+//				TweenMax.to(trackerShape, .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),
+//					ease:Sine.easeInOut,
+//					onComplete:fadeOutTracker});
+//				
+//				TweenMax.to(trackerShape, .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut});
 				
-				TweenMax.to(trackerShape, .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),
-					ease:Sine.easeInOut,
-					onComplete:fadeOutTracker});
+
+				TweenMax.allTo([trackerShape, bigCross, trackMessage], .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),ease:Sine.easeInOut},0.25,fadeOutTracker);
 				
-				TweenMax.to(trackerShape, .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut});
+				TweenMax.allTo([trackerShape, bigCross, trackMessage], .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut},0.25);
 				
 			}
 		}
 		
+		private function showTracker():void
+		{
+			if(!trackerShape)
+			{
+				trackerShape = new TrackerCross();
+				addChild(trackerShape);
+				
+				bigCross = new BigCross();
+				addChild(bigCross);
+				
+				trackMessage = new MessageHarness();
+				addChild(trackMessage);
+
+			}
+			
+			trackerShape.visible = bigCross.visible = trackMessage.visible = true;
+
+		}
+		
 		private function fadeOutTracker():void
 		{
-			TweenMax.to(trackerShape,.25,{delay:1,autoAlpha:0});
+			//trace("fadeOutTracker");
+			TweenMax.allTo([trackerShape, bigCross, trackMessage],.25,{delay:1,alpha:0},0.12,hideTracker);
+		}
+		
+		private function hideTracker():void
+		{
+			trackerShape.visible = bigCross.visible = trackMessage.visible = false;
 		}
 		
 
@@ -448,15 +486,11 @@ package
 				_motionDetector = new CameraMotionDetect(cameraDetectionBitmap.camVideo, 5, 1000000);
 
 				motionAreas = new BitmapData(h, w, false, 0x000000);	
-				
-				//motionAreas.draw(motionAreas);
-				
+								
 
 				if(debug)
 				{
 					var tbm:Bitmap = new Bitmap( motionAreas );
-
-//					var tbm:Bitmap = new Bitmap( thresholdMap );
 					tbm.alpha=.5;
 					_camOutput.addChild( tbm );
 				}
