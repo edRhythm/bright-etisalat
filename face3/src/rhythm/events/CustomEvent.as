@@ -1,4 +1,4 @@
-package rhythm.utils.events
+package rhythm.events
 {
 		
 		import flash.events.Event;

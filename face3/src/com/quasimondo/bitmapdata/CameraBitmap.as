@@ -14,7 +14,7 @@ package com.quasimondo.bitmapdata
 	import flash.utils.Timer;
 	import flash.utils.setTimeout;
 	
-	import rhythm.utils.events.CustomEvent;
+	import rhythm.events.CustomEvent;
 	
 	public class CameraBitmap extends EventDispatcher
 	{
@@ -102,7 +102,6 @@ package com.quasimondo.bitmapdata
 		private function cameraInit():void
 		{
 			camVideo = new Video( __cam.width, __cam.height );
-		//	camVideo = new Video(1080, 1920);
 
 			camVideo.attachCamera( __cam );
 						
