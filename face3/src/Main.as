@@ -30,6 +30,7 @@ package
 	
 	import net.hires.debug.Stats;
 	
+	import rhythm.displayObjects.MessageInputScreens;
 	import rhythm.events.CustomEvent;
 	import rhythm.utils.CameraMotionDetect;
 	import rhythm.utils.Maths;
@@ -69,7 +70,6 @@ package
 		
 		public var debug:Boolean;
 		private var _movingShapes:Sprite;
-		private var thresholdMap:ThresholdBitmap;
 		private var motionAreas:BitmapData;
 
 		private var blobAreaRect:Sprite;
@@ -96,7 +96,6 @@ package
 
 		private var roughEase:RoughEase;
 		private var particleHarness:Sprite;
-
 		private var particleTints:Array;
 		private var trackMessage:MessageHarness;
 
@@ -112,6 +111,9 @@ package
 
 		private var tempFaceBMP:Bitmap;
 		private var doing3dTransition:Boolean;
+		
+		private var inputMsg:MessageInputScreens;
+		
 
 		
 		
@@ -128,16 +130,16 @@ package
 						
 			stage.nativeWindow.height = stage.fullScreenHeight;
 			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
-			
-			var stats:Stats = new Stats();
-			stats.y = 50;
-			//stats.scaleX = stats.scaleY = 2;
-			addChild( stats);
-			
-			setUpCam();
-			initDetector();		
-			
 
+			//setUpCam();
+			//initDetector();	
+			inputMessage();
+		}
+		
+		private function inputMessage():void
+		{
+			inputMsg = new MessageInput();
+			addChild(inputMsg);
 		}
 		
 		
@@ -148,8 +150,8 @@ package
 			_camOutput.y = dh;
 			_camOutput.rotation = -90;
 			_camOutput.scaleX = _camOutput.scaleY = 2;
-			addChildAt(_camOutput,0);
-			
+			addChild(_camOutput);
+					
 			//camera bitmap
 			cameraDetectionBitmap = new CameraBitmap();
 			
@@ -203,9 +205,22 @@ package
 			camOutputMask.visible=false;
 			addChild(camOutputMask);
 			
+			//header footer
+			var hf:BitmapData = new HeaderFooter();	
+			var headerFooter:Bitmap = new Bitmap(hf);
+		//	headerFooter.mouseEnabled = false;
+			addChild(headerFooter);
+			
+			
 			//debug 
 			faceRectContainer = new Sprite();
 			addChild( faceRectContainer );	
+			
+			//staats
+			var stats:Stats = new Stats();
+			stats.y = 200;
+			//stats.scaleX = stats.scaleY = 2;
+			addChild( stats);
 						
 		}
 		
@@ -405,7 +420,7 @@ package
 		{
 			if(!particleHarness) 
 			{
-				addChild(particleHarness = new Sprite());
+				addChildAt(particleHarness = new Sprite(), this.getChildIndex(_camOutput)+1);
 				particleHarness.rotation=90;
 				particleHarness.y =  dh;
 				particleHarness.scaleX=-1;

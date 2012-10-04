@@ -43,7 +43,7 @@ package tweetcloud.boxes
 			mat = new TextureMaterial();
 			mat.alphaBlending = true;			
 			mat.lightPicker = new StaticLightPicker([light]);
-			mat.alpha = .87;
+		//	mat.alpha = .87;
 			
 			cameraPlane.material = mat;
 			
@@ -56,7 +56,7 @@ package tweetcloud.boxes
 			
 			ringPlane = new Mesh(new PlaneGeometry(1024, 1024));	
 			ringPlane.rotationX = -90;
-			ringPlane.y = -60;
+			ringPlane.y = 50;
 			ringPlane.z = -1;
 			ringPlane.x = 360;
 			ringPlane.scaleX = ringPlane.scaleZ = 1.75;

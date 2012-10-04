@@ -74,10 +74,9 @@ package tweetcloud
 		private function setUpAway3D():void
 		{
 			view = new View3D();
-			view.antiAlias = 4;
-			view.backgroundAlpha = 0;
+			view.antiAlias = 2;
 			
-			var bg:BitmapData = new BG();			
+			var bg:BitmapData = new GreenBG();			
 			var bgTexture:BitmapTexture = new BitmapTexture(bg);
 			view.background = bgTexture;
 			
