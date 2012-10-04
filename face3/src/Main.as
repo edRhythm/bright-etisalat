@@ -53,7 +53,7 @@ package
 		private var scaleFactor:int = 14;
 		private var dScaleFactor:int = scaleFactor*2//32;
 
-		private var w:int = 520;
+		private var w:int = 540;
 		private var h:int = 960;
 		private var dw:int = 1080;
 		private var dh:int = 1920;
@@ -62,7 +62,7 @@ package
 		private var dectAreaH:int=650;
 		
 		private var eyesRect:Sprite;
-		private var _faceMask:Sprite;
+		private var camOutputMask:Sprite;
 		private var _faceRim:Sprite;
 		private var _detected:Boolean;
 		private var _motionDetector:CameraMotionDetect;
@@ -111,6 +111,7 @@ package
 		private var rimMask:RimMask;
 
 		private var tempFaceBMP:Bitmap;
+		private var doing3dTransition:Boolean;
 
 		
 		
@@ -191,7 +192,16 @@ package
 			tweetCloud = new TweetCloud();
 			tweetCloud.init();
 			faceFor3d = new BitmapData(1024,1024);
-
+			
+			//cam mask
+			camOutputMask = new Sprite();
+			camOutputMask.graphics.beginFill(0xFFFFFF,0.5);
+			camOutputMask.graphics.drawCircle(0,0,h);
+			camOutputMask.mouseEnabled=false;
+			camOutputMask.x = w;
+			camOutputMask.y = h;
+			camOutputMask.visible=false;
+			addChild(camOutputMask);
 			
 			//debug 
 			faceRectContainer = new Sprite();
@@ -237,18 +247,8 @@ package
 				faceFor3d.lock();
 				faceFor3d.fillRect(new Rectangle(0,0,faceFor3d.width, faceFor3d.height),0);
 
-//				if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,faceRect.y, 1000, 1000), new Point(0,0),rimMask);
 				if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,40, 2000, 2000), new Point(0,0),rimMask);
-
-//
-//				if(!tempFaceBMP)
-//				{
-//					tempFaceBMP=new Bitmap( faceFor3d );
-//					tempFaceBMP.alpha=.8;
-//					tempFaceBMP.y = 100;
-//					addChild(tempFaceBMP);
-//				}
-					 						
+			 						
 				faceFor3d.unlock();
 				
 				tweetCloud.updateFace(faceFor3d);
@@ -257,6 +257,49 @@ package
 				detectMotionMode();
 				trackMotion();
 			}
+		}
+		
+		private function show3d():void
+		{
+			//trace("show3d");
+			//kill partigen
+			while(particleHarness.numChildren>0) 
+			{
+				var p:ParticleCross = ParticleCross(particleHarness.getChildAt(0));
+				TweenMax.killTweensOf(p);
+				killParticle(ParticleCross(particleHarness.getChildAt(0)));
+			}
+			
+			//stop calls to stopTracking
+			TweenMax.killDelayedCallsTo(stopFaceTracking);
+			
+			//mask transition
+			_camOutput.mask = camOutputMask;
+			TweenMax.to(camOutputMask,.5,{
+				transformAroundPoint:{point:new Point(w, 740),height:512, width:512},
+				colorTransform:{brightness:2},
+				ease:Sine.easeIn,
+				onComplete:hideCamOutput});
+			
+			
+			TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:0.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});	
+			
+			TweenMax.to(_camHarness,.5,{transformAroundCenter:{scaleX:.9, scaleY:.9}, ease:Sine.easeIn});	
+
+		}
+		
+		private function hideCamOutput():void
+		{
+			//trace("hideCamOutput");
+			_camOutput.visible=false;
+			_camOutput.mask = null;
+			camOutputMask.scaleX = camOutputMask.scaleY=1;
+			
+			tweetCloud.resume3d();			
+			if(tweetCloud.parent == null)addChild(tweetCloud);
+			
+			doing3dTransition = false;
+			
 		}
 		
 		private function initDetector():void
@@ -283,48 +326,28 @@ package
 			{
 				
 				
-				if(!_detected)
+				if(!_detected && !doing3dTransition)
 				{
-					//kill partigen
-					while(particleHarness.numChildren>0) 
-					{
-						var p:ParticleCross = ParticleCross(particleHarness.getChildAt(0));
-						TweenMax.killTweensOf(p);
-						killParticle(ParticleCross(particleHarness.getChildAt(0)));
-					}
-					
-					
-					//start 3d 
-					tweetCloud.resume3d();			
-					if(tweetCloud.parent == null)addChild(tweetCloud);
-					_camOutput.visible=false;
-					
-					//stop calls to stopTracking
-					TweenMax.killDelayedCallsTo(stopFaceTracking);
-								
-					TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:0.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});			
+					show3d();	
+					doing3dTransition=true;
 				}
 				
 				hideTracker();
 				_trackMotion=false;
 				_detected=true;
-				
-				g.lineStyle( 2, 0xff6600 );	// red 2pix
-
-				e.rects.forEach( function( r :Rectangle, idx :int, arr :Array ) :void {
+									
+				var r:Rectangle = e.rects[0];
+				rectCentre = new Point((r.x+(r.width*.5)),(r.y+(r.height*.5)));
 					
-					rectCentre = new Point((r.x+(r.width*.5)),(r.y+(r.height*.5)));
+				//define face rect position			
+				if(r.y>12 && r.y<23) TweenMax.to(faceRect,.75,{x: (r.y*-scaleFactor)+350, y:r.x*scaleFactor});
 					
-					//define face rect position
-					//trace("r",r);
-					
-					if(r.y>12 && r.y<23) TweenMax.to(faceRect,.75,{x: (r.y*-scaleFactor)+400, y:r.x*scaleFactor});
-					//trace("faceRect",faceRect);
-					if(debug)
-					{
-						g.drawRect( faceRect.x,faceRect.y,faceRect.width,faceRect.height );
-					}	
-				});	
+				if(debug)
+				{
+					g.lineStyle( 2, 0xff6600 );	// red 2pix
+					g.drawRect( faceRect.x,faceRect.y,faceRect.width,faceRect.height );
+				}	
+		
 			}else{
 				
 				if(_detected) 
@@ -345,24 +368,36 @@ package
 		
 		private function stopFaceTracking():void
 		{
-			tweetCloud.pause3d();
-			_camOutput.visible=true;
+		//	trace("stopFaceTracking");
+			TweenMax.killDelayedCallsTo(stopFaceTracking);
 
-			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn, onComplete:eyeShrunk});
+			tweetCloud.pause3d();
+			
+			_camOutput.visible=true;
+			
+			_camOutput.mask = camOutputMask;
+			camOutputMask.scaleX = camOutputMask.scaleY = 1;
+			
+			TweenMax.from(camOutputMask,.5,{
+				transformAroundPoint:{point:new Point(w, 740),height:512, width:512},
+				ease:Sine.easeIn,
+				onComplete:eyeShrunk});
+			
+
+			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn});
 				
 			TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, 
 				colorMatrixFilter:{saturation:1, contrast:1, brightness:1}, ease:Sine.easeInOut});	
 				
 				
-			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
-			
-			_trackMotion=true;
-				
+			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );				
 		}
 		
 		private function eyeShrunk():void
 		{
 			detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
+			_trackMotion=true;
+			_camOutput.mask = null;
 		}
 		
 		
@@ -466,7 +501,7 @@ package
 		{
 			if(!trackerShape)
 			{
-				trackerShape = new TrackerCross();
+				trackerShape = new TrackerRing();
 				addChild(trackerShape);
 				
 				bigCross = new BigCross();
