@@ -113,6 +113,7 @@ package
 		private var doing3dTransition:Boolean;
 		
 		private var inputMsg:MessageInputScreens;
+		private var inputMode:Boolean;
 		
 
 		
@@ -131,15 +132,9 @@ package
 			stage.nativeWindow.height = stage.fullScreenHeight;
 			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
 
-			//setUpCam();
-			//initDetector();	
-			inputMessage();
-		}
-		
-		private function inputMessage():void
-		{
-			inputMsg = new MessageInput();
-			addChild(inputMsg);
+			setUpCam();
+			initDetector();	
+			//inputMode = true;
 		}
 		
 		
@@ -266,7 +261,12 @@ package
 			 						
 				faceFor3d.unlock();
 				
-				tweetCloud.updateFace(faceFor3d);
+				if(! inputMode)
+				{
+					tweetCloud.updateFace(faceFor3d);
+				}else{
+					inputMessage();
+				}
 
 			}else{
 				detectMotionMode();
@@ -274,9 +274,24 @@ package
 			}
 		}
 		
+		
+		private function inputMessage():void
+		{
+			//trace("inputMessage");
+			if(!inputMsg)
+			{
+				inputMsg = new MessageInput();
+				inputMsg.alpha=.5;
+				addChild(inputMsg);
+			}
+			inputMsg.setCameraView(faceFor3d)
+
+		//	inputMsg.updateCameraView(faceFor3d);
+		}
+		
+		
 		private function show3d():void
 		{
-			//trace("show3d");
 			//kill partigen
 			while(particleHarness.numChildren>0) 
 			{
@@ -306,14 +321,40 @@ package
 		private function hideCamOutput():void
 		{
 			//trace("hideCamOutput");
+			if( !inputMode)
+			{
+				tweetCloud.resume3d();		
+			}else{
+				inputMsg.alpha=1;
+			}
+			
 			_camOutput.visible=false;
 			_camOutput.mask = null;
-			camOutputMask.scaleX = camOutputMask.scaleY=1;
-			
-			tweetCloud.resume3d();			
+			camOutputMask.scaleX = camOutputMask.scaleY=1;	
+		
 			if(tweetCloud.parent == null)addChild(tweetCloud);
 			
-			doing3dTransition = false;
+			doing3dTransition = false;	
+			
+			overlay3d();
+		}
+		
+		private function overlay3d():void
+		{
+			var addBtn:AddBtn = new AddBtn();
+			addBtn.x = 850;
+			addBtn.y = 790;
+			addBtn.scaleX = addBtn.scaleY = 1.2;
+			//addBtn.visible = false;
+			addBtn.alpha = 0;
+			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
+			addChild(addBtn);
+		}
+		
+		private function doAddClick(event:MouseEvent):void
+		{
+			trace("add clikced");
+			// TODO Auto-generated method stub
 			
 		}
 		
