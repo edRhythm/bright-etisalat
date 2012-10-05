@@ -20,6 +20,7 @@ package rhythm.events
 			// CLASS CONSTANTS
 			//--------------------------------------
 			public static const CAMERA_FOUND:String="CAMERA_FOUND";			
+			public static const INPUT_CANCELLED:String="INPUT_CANCELLED";			
 			
 			/**
 			 * A text message that can be passed to an event handler

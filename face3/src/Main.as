@@ -112,8 +112,11 @@ package
 		private var tempFaceBMP:Bitmap;
 		private var doing3dTransition:Boolean;
 		
-		private var inputMsg:MessageInputScreens;
+		private var inputMsg:MessageInput;
 		private var inputMode:Boolean;
+		private var faceTrackLostDelay:Number;
+
+		private var addBtn:AddBtn;
 		
 
 		
@@ -135,6 +138,8 @@ package
 			setUpCam();
 			initDetector();	
 			//inputMode = true;
+			
+			
 		}
 		
 		
@@ -171,6 +176,9 @@ package
 			//face detected mask
 			faceRect = new Rectangle(0, 0, 600,600);
 			rimMask = new RimMask();
+			
+			//detection end delay
+			faceTrackLostDelay = 5;
 
 			//motion tracking area
 			blobMaxW = dh*.8;
@@ -187,7 +195,9 @@ package
 
 			//3d
 			tweetCloud = new TweetCloud();
+			addChildAt(tweetCloud,0);
 			tweetCloud.init();
+			
 			faceFor3d = new BitmapData(1024,1024);
 			
 			//cam mask
@@ -211,7 +221,12 @@ package
 			faceRectContainer = new Sprite();
 			addChild( faceRectContainer );	
 			
-			//staats
+			//input overlay
+			inputMsg = new MessageInput();
+			addChildAt(inputMsg, getChildIndex(_camOutput)+1);	
+			inputMsg.visible = false;
+			
+			//stats
 			var stats:Stats = new Stats();
 			stats.y = 200;
 			//stats.scaleX = stats.scaleY = 2;
@@ -277,16 +292,7 @@ package
 		
 		private function inputMessage():void
 		{
-			//trace("inputMessage");
-			if(!inputMsg)
-			{
-				inputMsg = new MessageInput();
-				inputMsg.alpha=.5;
-				addChild(inputMsg);
-			}
-			inputMsg.setCameraView(faceFor3d)
-
-		//	inputMsg.updateCameraView(faceFor3d);
+			inputMsg.setCameraView(faceFor3d)		
 		}
 		
 		
@@ -324,15 +330,11 @@ package
 			if( !inputMode)
 			{
 				tweetCloud.resume3d();		
-			}else{
-				inputMsg.alpha=1;
 			}
 			
 			_camOutput.visible=false;
 			_camOutput.mask = null;
 			camOutputMask.scaleX = camOutputMask.scaleY=1;	
-		
-			if(tweetCloud.parent == null)addChild(tweetCloud);
 			
 			doing3dTransition = false;	
 			
@@ -341,11 +343,10 @@ package
 		
 		private function overlay3d():void
 		{
-			var addBtn:AddBtn = new AddBtn();
+			addBtn = new AddBtn();
 			addBtn.x = 850;
 			addBtn.y = 790;
 			addBtn.scaleX = addBtn.scaleY = 1.2;
-			//addBtn.visible = false;
 			addBtn.alpha = 0;
 			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
 			addChild(addBtn);
@@ -353,9 +354,30 @@ package
 		
 		private function doAddClick(event:MouseEvent):void
 		{
-			trace("add clikced");
-			// TODO Auto-generated method stub
+			if(inputMsg)inputMsg.visible = true;
 			
+			faceTrackLostDelay = 20;
+			
+			TweenMax.killDelayedCallsTo(stopFaceTracking);
+
+			inputMode = true;
+			
+			inputMsg.addEventListener(CustomEvent.INPUT_CANCELLED, closeInput,false,0,true);
+		}
+		
+		private function closeInput(event:Event):void
+		{
+			inputMsg.removeEventListener(CustomEvent.INPUT_CANCELLED, closeInput);
+			
+			TweenMax.killDelayedCallsTo(stopFaceTracking);
+
+			faceTrackLostDelay = 5;
+			
+			inputMsg.visible = false;
+			inputMode = false;
+			removeChild(addBtn);
+			
+			//tweetCloud.resume3d();
 		}
 		
 		private function initDetector():void
@@ -409,7 +431,7 @@ package
 				if(_detected) 
 				{
 					_detected = false;
-					TweenMax.delayedCall(5,stopFaceTracking);				
+					TweenMax.delayedCall(faceTrackLostDelay,stopFaceTracking);				
 				}else if(_trackMotion){
 					
 					//start motion tracking
@@ -424,10 +446,16 @@ package
 		
 		private function stopFaceTracking():void
 		{
-		//	trace("stopFaceTracking");
+			trace("stopFaceTracking");
 			TweenMax.killDelayedCallsTo(stopFaceTracking);
+			
+			if(inputMode)
+			{
+				closeInput(null);
+			}else{
+				tweetCloud.pause3d();
+			}
 
-			tweetCloud.pause3d();
 			
 			_camOutput.visible=true;
 			
@@ -437,7 +465,7 @@ package
 			TweenMax.from(camOutputMask,.5,{
 				transformAroundPoint:{point:new Point(w, 740),height:512, width:512},
 				ease:Sine.easeIn,
-				onComplete:eyeShrunk});
+				onComplete:quit3d});
 			
 
 			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn});
@@ -449,7 +477,7 @@ package
 			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );				
 		}
 		
-		private function eyeShrunk():void
+		private function quit3d():void
 		{
 			detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
 			_trackMotion=true;
