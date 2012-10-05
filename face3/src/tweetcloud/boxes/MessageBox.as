@@ -72,7 +72,9 @@ package tweetcloud.boxes
 		
 		private function createPlane(displayBox:TweetBox):void
 		{
-			var targetY:Number = 1000 - Math.random()*2000;
+			var targetY:Number = -1000 + Math.random()*780;
+			if (Math.random() < .5) targetY = 400 + Math.random()*600;
+			
 			var targetScale:Number = .8+Math.random()*.3;
 			
 			plane = new Mesh(new PlaneGeometry(displayBox.width, displayBox.height));
@@ -96,12 +98,14 @@ package tweetcloud.boxes
 		{
 			doUpdate = false;
 			
-			TweenMax.to(container, 1, {rotationY:90, ease:Quad.easeInOut});
-			TweenMax.to(plane, 1, {x:1300, y:0, z:0, scaleX:1, scaleZ:1, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox});
+			trace('plane.y:', plane.y);
+			
+			// TweenMax.to(container, 1, {rotationY:90, ease:Quad.easeInOut});
+			// TweenMax.to(plane, 1, {x:1300, y:0, z:0, scaleX:1, scaleZ:1, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox});
 		}
 		
 		private function showTweetBox():void
-		{			
+		{						
 			box.scaleX = box.scaleY = 1.38;
 			box.x = stage.stageWidth/2 - box.width/2;
 			box.y = stage.stageHeight/2 - box.height/2;
@@ -159,7 +163,10 @@ package tweetcloud.boxes
 				if (container.rotationY > 360) 
 				{
 					container.rotationY -= 360; // keep within 360
-					updateDisplayBox(new TweetBoxDisplay()); // refresh with new message
+					
+					var displayBox:TweetBox = new TweetBoxDisplay();
+					displayBox.populate('Edmund Baldry', '@edbaldry', 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.');
+					updateDisplayBox(displayBox); // refresh with new message
 				}
 			}
 		}
