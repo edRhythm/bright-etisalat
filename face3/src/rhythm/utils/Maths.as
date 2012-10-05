@@ -18,5 +18,11 @@ package rhythm.utils
 			var randomNum:Number = Math.random()*($max - $min ) + $min;
 			return randomNum//.toFixed($decimelPlaces);
 		}
+		
+		public static function getUniqueName():String
+		{
+			var d:Date = new Date();
+			return d.getMonth() + 1 + '' + d.getDate() + '' + d.getHours() + '' + d.getMinutes() + '' + d.getMilliseconds();
+		}
 	}
 }
