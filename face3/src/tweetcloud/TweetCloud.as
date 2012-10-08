@@ -75,6 +75,8 @@ package tweetcloud
 		{
 			view = new View3D();
 			view.antiAlias = 2;
+			view.height = 1675;
+			view.y = 100;
 			
 			var bg:BitmapData = new GreenBG();			
 			var bgTexture:BitmapTexture = new BitmapTexture(bg);
@@ -89,9 +91,9 @@ package tweetcloud
 			pointLight.ambient = 1;
 			view.scene.addChild(pointLight);
 			
-			directonalLight = new DirectionalLight();
-			directonalLight.specular = .5;
-			view.scene.addChild(directonalLight);
+//			directonalLight = new DirectionalLight();
+//			directonalLight.specular = .5;
+//			view.scene.addChild(directonalLight);
 			
 			fogMethod = new FogMethod(1000, 5000, 0xffffff);
 			
@@ -111,6 +113,7 @@ package tweetcloud
 			{
 				var box:MessageBox = new MessageBox();
 				var displayBox:TweetBox = new TweetBoxDisplay();
+				displayBox.populate('Edmund Baldry', '@edbaldry', 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.');
 				
 				box.init(nextId, displayBox, pointLight, fogMethod);
 				boxes.push(box);
@@ -174,8 +177,7 @@ package tweetcloud
 		
 		public function remove3d():void
 		{
-			if(view)view.stage3DProxy.dispose();
-			
+			if (view) view.stage3DProxy.dispose();
 		}
 	}
 }
