@@ -21,7 +21,8 @@ package rhythm.events
 			//--------------------------------------
 			public static const CAMERA_FOUND:String="CAMERA_FOUND";			
 			public static const INPUT_CANCELLED:String="INPUT_CANCELLED";			
-			
+			public static const KEY_PRESSED:String = "KEY_PRESSED";
+
 			/**
 			 * A text message that can be passed to an event handler
 			 * with this event object.

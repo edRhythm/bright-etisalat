@@ -372,7 +372,8 @@ package com.greensock {
 		
 		/** 
 		 * Works in conjunction with the repeat property, determining the behavior of each cycle; when yoyo is true, 
-		 * the tween will go back and forth, appearing to reverse every other cycle (this has no affect on the "reversed" 
+		 * the tween will go back and forth, appearing to 
+e every other cycle (this has no affect on the "reversed" 
 		 * property though). So if repeat is 2 and yoyo is false, it will look like: start - 1 - 2 - 3 - 1 - 2 - 3 - 1 - 2 - 3 - end. 
 		 * But if repeat is 2 and yoyo is true, it will look like: start - 1 - 2 - 3 - 3 - 2 - 1 - 1 - 2 - 3 - end.  
 		 **/

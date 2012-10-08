@@ -62,9 +62,7 @@ package
 		private var dectAreaW:int=400;
 		private var dectAreaH:int=650;
 		
-		private var eyesRect:Sprite;
 		private var camOutputMask:Sprite;
-		private var _faceRim:Sprite;
 		private var _detected:Boolean;
 		private var _motionDetector:CameraMotionDetect;
 		
@@ -298,6 +296,9 @@ package
 		
 		private function show3d():void
 		{
+			
+			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
+
 			//kill partigen
 			while(particleHarness.numChildren>0) 
 			{
@@ -318,7 +319,7 @@ package
 				onComplete:hideCamOutput});
 			
 			
-			TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:0.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});	
+			//TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:1.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});	
 			
 			TweenMax.to(_camHarness,.5,{transformAroundCenter:{scaleX:.9, scaleY:.9}, ease:Sine.easeIn});	
 
@@ -347,7 +348,7 @@ package
 			addBtn.x = 850;
 			addBtn.y = 790;
 			addBtn.scaleX = addBtn.scaleY = 1.2;
-			addBtn.alpha = 0;
+		//	addBtn.alpha = 0;
 			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
 			addChild(addBtn);
 		}
@@ -356,7 +357,7 @@ package
 		{
 			if(inputMsg)inputMsg.visible = true;
 			
-			faceTrackLostDelay = 20;
+			faceTrackLostDelay = int.MAX_VALUE;
 			
 			TweenMax.killDelayedCallsTo(stopFaceTracking);
 
@@ -470,8 +471,7 @@ package
 
 			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn});
 				
-			TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, 
-				colorMatrixFilter:{saturation:1, contrast:1, brightness:1}, ease:Sine.easeInOut});	
+		//	TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, colorMatrixFilter:{saturation:1, contrast:1, brightness:1}, ease:Sine.easeInOut});	
 				
 				
 			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );				
@@ -586,7 +586,7 @@ package
 			if(!trackerShape)
 			{
 				trackerShape = new TrackerRing();
-				addChild(trackerShape);
+			//	addChild(trackerShape);
 				
 				bigCross = new BigCross();
 				addChild(bigCross);
