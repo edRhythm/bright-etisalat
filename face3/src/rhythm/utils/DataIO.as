@@ -1,5 +1,6 @@
 package rhythm.utils
 {
+	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
@@ -22,6 +23,8 @@ package rhythm.utils
 		public var tweetsXML:XML;
 		
 		private var tweetsLoader:URLLoader;
+
+		private var kioskXMLMerged:XML;
 		
 		
 		public function DataIO(target:IEventDispatcher=null)
@@ -35,7 +38,9 @@ package rhythm.utils
 			
 			getConfig();			
 			getKioskData();
-			getTweets();
+			
+			// getTweets();
+			tweetsLoaderErrorHandler(null);
 		}
 		
 		private function listFiles():void
@@ -76,6 +81,19 @@ package rhythm.utils
 			}
 			
 			trace('\tkioskXML loaded (' + kioskXML.length + ' files)');
+			
+			// merge all kiosk message data
+			kioskXMLMerged = <users></users>;
+			
+			for (var i:int=0; i<kioskXML.length; ++i)
+			{
+				for each (var j:XML in kioskXML[i].xml.user)
+				{
+					kioskXMLMerged.appendChild(j);
+				}
+			}
+			
+			resetUsedMessages();
 		}
 		
 		private function getTweets():void
@@ -94,32 +112,32 @@ package rhythm.utils
 			
 			req.data = new XML(reqData);
 			
-			tweetsLoader.addEventListener(Event.COMPLETE, loadingCompleteHandler);
-			tweetsLoader.addEventListener(IOErrorEvent.IO_ERROR, loadingErrorHandler);
+			tweetsLoader.addEventListener(Event.COMPLETE, tweetsLoaderCompleteHandler);
+			tweetsLoader.addEventListener(IOErrorEvent.IO_ERROR, tweetsLoaderErrorHandler);
 			tweetsLoader.load(req);
 		}
 		
-		private function loadingErrorHandler(e:IOErrorEvent):void
+		private function tweetsLoaderErrorHandler(e:IOErrorEvent):void
 		{
 			// error! So load local tweets xml...
 			var file:File = File.desktopDirectory.resolvePath('kioskData/serverXML/tweets.xml');
 			var fs:FileStream = new FileStream();
 			fs.open(file, FileMode.READ);
-			tweetsXML = XML(fs.readUTFBytes(fs.bytesAvailable));
+				tweetsXML = XML(fs.readUTFBytes(fs.bytesAvailable));
 			fs.close();
 			
 			trace('\ttweetsXML FAILED, so loaded local version');
 			allXMLLoaded();
 		}
 		
-		private function loadingCompleteHandler(e:Event):void
+		private function tweetsLoaderCompleteHandler(e:Event):void
 		{
 			tweetsXML = XML(XML(tweetsLoader.data)..Profiles); // only need Profiles node. Not all the soap crap.
 			
 			var file:File = File.desktopDirectory.resolvePath('kioskData/serverXML/tweets.xml');
 			var fs:FileStream = new FileStream();
 			fs.open(file, FileMode.WRITE);
-			fs.writeUTFBytes(tweetsXML);
+				fs.writeUTFBytes(tweetsXML);
 			fs.close();
 			
 			trace('\ttweetsXML LOADED and saved in serverXML/tweets.xml');
@@ -128,7 +146,68 @@ package rhythm.utils
 		
 		private function allXMLLoaded():void
 		{
+			resetUsedTweets();
 			dispatchEvent(new CustomEvent(CustomEvent.DATA_READY, true));
 		}		
+		
+		public function getRandomTweets(amount:int):XML
+		{
+			var pool:XMLList;
+			var tweets:XML = <Profiles></Profiles>;
+			
+			for (var i:int=0; i<amount; ++i)
+			{
+				pool = tweetsXML..Profile.(@used == 'false');
+				if (pool.length() <= 0) 
+				{
+					resetUsedTweets();
+					pool = tweetsXML..Profile.(@used == 'false');
+				}
+				
+				var tweet:XML = pool[Math.floor(Math.random()*pool.length())]; 
+				tweet.@used = 'true';					
+				tweets.appendChild(tweet);
+			}		
+			return tweets;
+		}
+		
+		private function resetUsedTweets():void
+		{
+			// set all to unused
+			for each (var tweet:XML in tweetsXML.Profile)
+			{
+				tweet.@used = 'false';
+			}
+		}
+		
+		public function getRandomMessages(amount:int):XML
+		{
+			var pool:XMLList;
+			var messages:XML = <users></users>;
+			
+			for (var i:int=0; i<amount; ++i)
+			{
+				pool = kioskXMLMerged..user.(@used == 'false');
+				if (pool.length() <= 0) 
+				{
+					resetUsedMessages();
+					pool = kioskXMLMerged..user.(@used == 'false');
+				}
+				
+				var message:XML = pool[Math.floor(Math.random()*pool.length())]; 
+				message.@used = 'true';					
+				messages.appendChild(message);
+			}		
+			return messages;
+		}
+		
+		private function resetUsedMessages():void
+		{
+			// set all to unused
+			for each (var message:XML in kioskXMLMerged.user)
+			{
+				message.@used = 'false';
+			}
+		}
 	}
 }
