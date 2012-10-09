@@ -60,7 +60,7 @@ package rhythm.utils
 			trace('\tconfigXML loaded');
 		}
 		
-		private function getKioskData():void
+		public function getKioskData():void
 		{
 			kioskXML = [];
 			
