@@ -73,7 +73,7 @@ package rhythm.displayObjects
 			neoTechFont = new NeoTechFont();
 			tFormat = TFormats.getTFormatToSize(50, neoTechFont,0x293C44, "center");	
 			
-			userXML = <user><username></username><twitter></twitter><photo></photo><interests></interests></user>
+			userXML = <user moderated="false"><username></username><twitter></twitter><photo></photo><interests></interests></user>
 					
 			stageNum=1;
 			setUpStage1();
@@ -222,8 +222,6 @@ package rhythm.displayObjects
 						userXML.interests.appendChild(XML("<interest>"+int+"</interest>"));
 					}
 
-					//trace("userXML",userXML);
-
 					finishBtn.visible = true;
 					nextBtn.visible = false;
 					
@@ -313,8 +311,11 @@ package rhythm.displayObjects
 			photoBytes = encoder.encode(camBMD);
 			
 			//insert path from config
-			var file:File = File.desktopDirectory.resolvePath("kioskData");
+			var picDirectoryName:String = "kiosk0";
+			var file:File = File.desktopDirectory.resolvePath("kioskData/images/"+picDirectoryName);
 			file= file.resolvePath(photoName+".jpg"); 
+	
+			var picPath:String = picDirectoryName+"/"+photoName+".jpg";
 			var fs:FileStream = new FileStream();
 			
 			fs.open(file,FileMode.WRITE);
@@ -322,11 +323,29 @@ package rhythm.displayObjects
 			fs.close();	
 			
 			//add to xml
-			userXML.photo = photoName+".jpg";
+			userXML.photo = picPath;
 			userXML.username = nameInput;
-			userXML.twitter = twitterInput;
+			userXML.twitter = twitterInput
 			
-//			trace("userXML",userXML);
+			//save xml
+			var xmlFile:File = File.desktopDirectory.resolvePath("kioskData/localXML");
+			xmlFile= xmlFile.resolvePath("kiosk0.xml"); 
+		//	trace("xmlFile",xmlFile.url);
+			
+			fs.open(xmlFile,FileMode.READ);
+			var loadedXML:XML = XML(fs.readUTFBytes(fs.bytesAvailable));
+			fs.close();	
+			
+			loadedXML.users+=userXML;
+			
+			//trace("loadedXML",loadedXML);
+			
+			
+			fs.open(xmlFile,FileMode.WRITE);
+			fs.writeUTFBytes(loadedXML);
+			fs.close();	
+			
+			trace("saved xml",userXML);
 			
 			//tween offstage
 			TweenMax.to(this,.5,{delay:4,y:-1920,ease:Sine.easeIn, onComplete:finished});
