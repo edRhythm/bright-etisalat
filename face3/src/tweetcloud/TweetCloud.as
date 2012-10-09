@@ -12,11 +12,16 @@ package tweetcloud
 	import away3d.primitives.PlaneGeometry;
 	import away3d.textures.BitmapTexture;
 	
+	import com.greensock.loading.ImageLoader;
+	
 	import flash.display.BitmapData;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
+	
+	import rhythm.events.CustomEvent;
+	import rhythm.utils.DataIO;
 	
 	import tweetcloud.boxes.Blob;
 	import tweetcloud.boxes.BlobBox;
@@ -44,18 +49,20 @@ package tweetcloud
 		private var paused:Boolean;
 		
 		private var testMessage:String = 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.';
+		private var dataIO:DataIO;
 		
 		
 		public function TweetCloud()
 		{	
 		}
 		
-		public function init():void
-		{			
+		public function init(dataIO:DataIO):void
+		{		
+			this.dataIO = dataIO;
 			setUpAway3D();			
 			
 			createFace();
-			createInitialBoxes(50);
+			createInitialBoxes();
 			createBlobs(40);
 			
 			pause3d();
@@ -102,7 +109,7 @@ package tweetcloud
 			addChild(view); 
 		}
 		
-		private function createInitialBoxes(amount:int):void
+		private function createInitialBoxes():void
 		{			
 			boxes = [];
 			
@@ -111,34 +118,61 @@ package tweetcloud
 			boxesHolder.mouseChildren = boxesHolder.mouseEnabled = boxesHolder.visible = false;
 			addChild(boxesHolder);
 			
-			for (var i:int=0; i<amount; ++i)
-			{
-				var box:MessageWrapper = new MessageWrapper();
-
-				
-				
-				var displayBox:TweetBox = new TweetBoxDisplay();
-				
-				var horse:Sprite = new Ed();
-				if (Math.random() > .5) horse = new horse0();
-				else horse = new horse1();
-				
-				// displayBox.populateTweet('Edmund Baldry', '@edbaldry', testMessage);
-				// displayBox.populateTweetImage('@edbaldry', testMessage, horse);
-				displayBox.populateMessage('Edmund Baldry', '@edbaldry', 'Old Folks Homes, Fucking around in bushes, Tiny horses', horse);
-				
-				
-				box.init(nextId, displayBox, boxesHolder, pointLight, fogMethod);
-				box.addEventListener('reset all planes', onResetAllPlanes, false, 0, true);
-				
-				boxes.push(box);
-				view.scene.addChild(box.container);				
-				boxesHolder.addChild(box.box);
-				
-				box.stage = stage;
-				++nextId;
+			createTweetBoxes();
+			createMessageBoxes();
+		}
+		
+		private function createBox(displayBox:TweetBox):void
+		{
+			var box:MessageWrapper = new MessageWrapper();
+			box.init(nextId, displayBox, boxesHolder, pointLight, fogMethod);
+			box.addEventListener('reset all planes', onResetAllPlanes, false, 0, true);	
+			
+			boxes.push(box);
+			view.scene.addChild(box.container);				
+			boxesHolder.addChild(box.box);
+			
+			box.stage = stage;
+			++nextId;
+		}
+		
+		private function createTweetBoxes():void
+		{
+			var tweets:XML = dataIO.getRandomTweets(Number(dataIO.configXML.threeD.@tweets));
+			
+			for (var i:int=0; i<tweets.Profile.length(); ++i)
+			{				
+				var displayBox:TweetBox = new TweetBoxDisplay();				
+				displayBox.populateTweet(tweets.Profile[i]);
+				displayBox.addEventListener(CustomEvent.TWEETBOX_READY, onTweetBoxReady, false, 0, true);
 			}
-		}		
+		}
+		
+		private function onTweetBoxReady(event:CustomEvent):void
+		{
+			var displayBox:TweetBox = event.params.displayBox;
+			displayBox.removeEventListener(CustomEvent.TWEETBOX_READY, onTweetBoxReady);
+			createBox(displayBox);
+		}
+		
+		private function createMessageBoxes():void
+		{
+			var messages:XML = dataIO.getRandomMessages(Number(dataIO.configXML.threeD.@messages));
+			
+			for (var i:int=0; i<messages.user.length(); ++i)
+			{					
+				var displayBox:TweetBox = new TweetBoxDisplay();
+				displayBox.populateMessage(messages.user[i]);
+				displayBox.addEventListener(CustomEvent.TWEETBOX_READY, onMessageBoxReady, false, 0, true);
+			}
+		}
+		
+		private function onMessageBoxReady(event:CustomEvent):void
+		{
+			var displayBox:TweetBox = event.params.displayBox;
+			displayBox.removeEventListener(CustomEvent.TWEETBOX_READY, onMessageBoxReady);
+			createBox(displayBox);
+		}
 		
 		private function onResetAllPlanes(event:Event):void
 		{
