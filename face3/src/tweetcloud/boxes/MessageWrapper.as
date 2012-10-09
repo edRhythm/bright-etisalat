@@ -17,14 +17,16 @@ package tweetcloud.boxes
 	
 	import flash.display.BitmapData;
 	import flash.display.BlendMode;
+	import flash.display.Sprite;
 	import flash.display.Stage;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.events.MouseEvent;
 	import flash.ui.Mouse;
 	import flash.ui.MouseCursor;
 	
 	
-	public class MessageBox extends EventDispatcher
+	public class MessageWrapper extends EventDispatcher
 	{
 		public var id:int;
 		
@@ -42,14 +44,18 @@ package tweetcloud.boxes
 		public var doUpdate:Boolean;
 		public var stage:Stage;
 		
+		private var settings:Object;
+		private var boxesHolder:Sprite;
 		
-		public function MessageBox()
+		
+		public function MessageWrapper()
 		{
 			super();
 		}
 		
-		public function init(boxId:int, displayBox:TweetBox, light:PointLight, fogMethod:FogMethod):void
+		public function init(boxId:int, displayBox:TweetBox, boxesHolder:Sprite, light:PointLight, fogMethod:FogMethod):void
 		{
+			this.boxesHolder = boxesHolder;
 			id = boxId;
 			pointLight = light;
 			fog = fogMethod;
@@ -77,15 +83,14 @@ package tweetcloud.boxes
 			
 			var targetScale:Number = .8+Math.random()*.3;
 			
-			plane = new Mesh(new PlaneGeometry(displayBox.width, displayBox.height));
+			// plane = new Mesh(new PlaneGeometry(displayBox.width, displayBox.height));
+			plane = new Mesh(new PlaneGeometry(256, 256));
 			plane.rotationX = ((targetY / 30)-90);
 			plane.rotationY = -90;
 			plane.scale(.01);
 			
 			plane.mouseEnabled = true;
 			plane.addEventListener(MouseEvent3D.MOUSE_DOWN, onMouseDownPlane);
-			plane.addEventListener(MouseEvent3D.MOUSE_OVER, onMouseOverPlane);
-			plane.addEventListener(MouseEvent3D.MOUSE_OUT, onMouseOutPlane);
 			
 			TweenMax.to(plane, 2 + Math.random()*10, {x:800 + Math.random()*1000, y:targetY, scaleX:targetScale, scaleZ:targetScale, ease:Elastic.easeOut, delay:.5 + Math.random()*2});
 			
@@ -96,41 +101,68 @@ package tweetcloud.boxes
 		
 		private function onMouseDownPlane(event:MouseEvent3D):void
 		{
-			doUpdate = false;
+			dispatchEvent(new Event('reset all planes', true));
+			doUpdate = plane.mouseEnabled = false;
 			
-			trace('plane.y:', plane.y);
+			settings = {
+				matAlpha:mat.alpha,
+				plane: { x:plane.x, y:plane.y, z:plane.z, scale:plane.scaleX, rotationX:plane.rotationX },
+				container: { rotationY:container.rotationY },
+				zoomDuration: .6
+			};
 			
-			// TweenMax.to(container, 1, {rotationY:90, ease:Quad.easeInOut});
-			// TweenMax.to(plane, 1, {x:1300, y:0, z:0, scaleX:1, scaleZ:1, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox});
+			if (box.type == 'message') settings.offsets = { box:-185, plane:135 }
+			else settings.offsets = { box:-120, plane:80 };
+			
+			TweenMax.to(container, settings.zoomDuration, {rotationY:90, ease:Quad.easeInOut});
+			TweenMax.to(plane, settings.zoomDuration, {x:1300, y:settings.offsets.plane, z:0, scaleX:1.575, scaleZ:1.575, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox});
+			TweenMax.to(mat, settings.zoomDuration, {alpha:1, ease:Quad.easeInOut});
 		}
 		
 		private function showTweetBox():void
 		{						
-			box.scaleX = box.scaleY = 1.38;
-			box.x = stage.stageWidth/2 - box.width/2;
-			box.y = stage.stageHeight/2 - box.height/2;
+			box.scaleX = box.scaleY = 1.9;
+			box.x = stage.stageWidth/2 - 242;
+			box.y = stage.stageHeight/2 - 242 + settings.offsets.box;
 			box.alpha = 0;
 			stage.addChild(box);
 			
-			TweenMax.to(box, .6, {alpha:mat.alpha, ease:Quad.easeOut});
-			TweenMax.to(mat, .6, {alpha:0, ease:Quad.easeIn});
+			TweenMax.to(box, .14, {alpha:1, ease:Quad.easeOut});
+			box.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownBox, false, 0, true);
 		}
 		
-		private function onMouseOverPlane(event:MouseEvent3D):void
+		private function onMouseDownBox(event:MouseEvent):void
 		{
-			Mouse.cursor = MouseCursor.BUTTON;
+			resetPlane();
 		}
 		
-		private function onMouseOutPlane(event:MouseEvent3D):void
+		public function resetPlane():void
 		{
-			Mouse.cursor = MouseCursor.AUTO;	
+			if (settings != null)
+			{
+				box.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDownBox);
+				box.alpha = box.x = box.y = 0;
+				box.scaleX = box.scaleY = 1;
+				boxesHolder.addChild(box);
+				
+				// reset plane etc
+				TweenMax.to(container, .7, {rotationY:settings.container.rotationY, ease:Quad.easeOut});
+				TweenMax.to(plane, .7, {x:settings.plane.x, y:settings.plane.y, z:settings.plane.z, scaleX:settings.plane.scale, scaleZ:settings.plane.scale, rotationX:settings.plane.rotationX, ease:Sine.easeOut, onComplete:resumeUpdate});
+				TweenMax.to(mat, .4, {alpha:settings.matAlpha, ease:Quad.easeInOut});
+			}			
 		}
 		
-		public function updateDisplayBox(displayBox:TweetBox):void
+		private function resumeUpdate():void
 		{
-			box = displayBox;
+			doUpdate = plane.mouseEnabled = true;
+			settings = null;
+		}
+		
+		public function updateDisplayBox(displayBox:TweetBox=null):void
+		{
+			if (displayBox != null) box = displayBox;
 			
-			if (bmd == null) bmd = new BitmapData(box.width, box.height, true, 0x000000);			
+			if (bmd == null) bmd = new BitmapData(256, 256, true, 0x000000);			
 			bmd.lock()
 			bmd.fillRect(bmd.rect, 0);
 			bmd.draw(box);
@@ -147,8 +179,8 @@ package tweetcloud.boxes
 		{
 			var updateTexture:Boolean;			
 			
-			if (container.rotationY > 160) updateTexture = box.showFrameTexture(box.frameDefault + 'Blank');
-			else updateTexture = box.showFrameTexture(box.frameDefault);	
+			if (container.rotationY > 160) updateTexture = box.showFrameTexture(box.type + 'Blank');
+			else updateTexture = box.showFrameTexture(box.type);
 			
 			if (updateTexture) updateDisplayBox(box);
 		}
@@ -160,13 +192,15 @@ package tweetcloud.boxes
 				switchTextureByZ();
 				container.rotationY += spinSpeed;
 				
+				// refresh with new data as it goes round
 				if (container.rotationY > 360) 
 				{
 					container.rotationY -= 360; // keep within 360
 					
-					var displayBox:TweetBox = new TweetBoxDisplay();
-					displayBox.populate('Edmund Baldry', '@edbaldry', 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.');
-					updateDisplayBox(displayBox); // refresh with new message
+//					var displayBox:TweetBox = new TweetBoxDisplay();
+//					displayBox.populateTweet('Edmund Baldry', '@edbaldry', 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.');
+//					
+					updateDisplayBox(); // refresh with new message
 				}
 			}
 		}

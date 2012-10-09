@@ -21,7 +21,7 @@ package tweetcloud
 	import tweetcloud.boxes.Blob;
 	import tweetcloud.boxes.BlobBox;
 	import tweetcloud.boxes.FaceBox;
-	import tweetcloud.boxes.MessageBox;
+	import tweetcloud.boxes.MessageWrapper;
 	import tweetcloud.boxes.TweetBox;
 	
 	
@@ -42,6 +42,8 @@ package tweetcloud
 
 		private var faceBox:FaceBox;
 		private var paused:Boolean;
+		
+		private var testMessage:String = 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.';
 		
 		
 		public function TweetCloud()
@@ -111,11 +113,24 @@ package tweetcloud
 			
 			for (var i:int=0; i<amount; ++i)
 			{
-				var box:MessageBox = new MessageBox();
-				var displayBox:TweetBox = new TweetBoxDisplay();
-				displayBox.populate('Edmund Baldry', '@edbaldry', 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.');
+				var box:MessageWrapper = new MessageWrapper();
+
 				
-				box.init(nextId, displayBox, pointLight, fogMethod);
+				
+				var displayBox:TweetBox = new TweetBoxDisplay();
+				
+				var horse:Sprite = new Ed();
+				if (Math.random() > .5) horse = new horse0();
+				else horse = new horse1();
+				
+				// displayBox.populateTweet('Edmund Baldry', '@edbaldry', testMessage);
+				// displayBox.populateTweetImage('@edbaldry', testMessage, horse);
+				displayBox.populateMessage('Edmund Baldry', '@edbaldry', 'Old Folks Homes, Fucking around in bushes, Tiny horses', horse);
+				
+				
+				box.init(nextId, displayBox, boxesHolder, pointLight, fogMethod);
+				box.addEventListener('reset all planes', onResetAllPlanes, false, 0, true);
+				
 				boxes.push(box);
 				view.scene.addChild(box.container);				
 				boxesHolder.addChild(box.box);
@@ -124,6 +139,14 @@ package tweetcloud
 				++nextId;
 			}
 		}		
+		
+		private function onResetAllPlanes(event:Event):void
+		{
+			for each (var box:MessageWrapper in boxes)
+			{
+				box.resetPlane();
+			}
+		}
 		
 		private function createBlobs(amount:int):void
 		{
