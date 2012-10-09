@@ -64,20 +64,28 @@ package rhythm.displayObjects
 		private var twitterInput:String;
 		private var namesInput:NamesInput;
 		private var currentNameTF:TextField;
+		private var config:XML;
 
 		
 		
 		public function MessageInputScreens()
+		{			
+			
+		}
+		
+		public function initWithConfig(configXML:XML):void
 		{
-			trace("FUCK");
+			config = configXML;
+			
 			neoTechFont = new NeoTechFont();
 			tFormat = TFormats.getTFormatToSize(50, neoTechFont,0x293C44, "center");	
 			
 			userXML = <user moderated="false"><username></username><twitter></twitter><photo></photo><interests></interests></user>
-					
+			
+			progressDisplay.gotoAndStop(1);	
+			
 			stageNum=1;
 			setUpStage1();
-			progressDisplay.gotoAndStop(1);	
 		}
 		
 		
@@ -311,7 +319,7 @@ package rhythm.displayObjects
 			photoBytes = encoder.encode(camBMD);
 			
 			//insert path from config
-			var picDirectoryName:String = "kiosk0";
+			var picDirectoryName:String = "kiosk"+String(config.kiosk.@id);
 			var file:File = File.desktopDirectory.resolvePath("kioskData/images/"+picDirectoryName);
 			file= file.resolvePath(photoName+".jpg"); 
 	
@@ -329,7 +337,7 @@ package rhythm.displayObjects
 			
 			//save xml
 			var xmlFile:File = File.desktopDirectory.resolvePath("kioskData/localXML");
-			xmlFile= xmlFile.resolvePath("kiosk0.xml"); 
+			xmlFile= xmlFile.resolvePath("kiosk"+String(config.kiosk.@id)+".xml"); 
 		//	trace("xmlFile",xmlFile.url);
 			
 			fs.open(xmlFile,FileMode.READ);
