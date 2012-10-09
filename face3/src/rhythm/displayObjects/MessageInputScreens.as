@@ -18,6 +18,7 @@ package rhythm.displayObjects
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.geom.Matrix;
+	import flash.geom.Rectangle;
 	import flash.net.FileReference;
 	import flash.text.Font;
 	import flash.text.TextField;
@@ -28,6 +29,7 @@ package rhythm.displayObjects
 	import rhythm.text.TFCreator;
 	import rhythm.text.TFormats;
 	import rhythm.utils.Maths;
+	import flash.geom.Point;
 
 	public class MessageInputScreens extends MovieClip 
 	{
@@ -65,6 +67,7 @@ package rhythm.displayObjects
 		private var namesInput:NamesInput;
 		private var currentNameTF:TextField;
 		private var config:XML;
+		private var rimMask:BitmapData;
 
 		
 		
@@ -79,24 +82,11 @@ package rhythm.displayObjects
 			
 			neoTechFont = new NeoTechFont();
 			tFormat = TFormats.getTFormatToSize(50, neoTechFont,0x293C44, "center");	
-			
-			userXML = <user moderated="false"><username></username><twitter></twitter><photo></photo><interests></interests></user>
-			
-			progressDisplay.gotoAndStop(1);	
-			
-			stageNum=1;
-			setUpStage1();
-		}
-		
-		
-		
-		private function setUpStage1():void
-		{
-			titleTF.text = "Your Photo";
-			
-			finishBtn.visible = false;		
-			
+							
+			//photo stuff
 			photoScale = 0.8;
+			rimMask = new RimMaskSmall();
+
 			
 			faceMatrix = new Matrix();
 			faceMatrix.rotate( -90 * (Math.PI / 180 ) );
@@ -104,6 +94,7 @@ package rhythm.displayObjects
 			faceMatrix.scale(photoScale,photoScale);
 			
 			camBMD = new BitmapData(512*photoScale,512*photoScale,true,0x000000);
+			
 			
 			faceBitmap = new Bitmap(camBMD,"never",true);
 			faceHarness = new Sprite();
@@ -117,23 +108,58 @@ package rhythm.displayObjects
 			
 			countdownTF = TFCreator.createTextField(60,60,false,false,true,"center",tFormat);
 			countdownTF.text = "0";
-			countdownTF.alpha=.1;
-			
+
 			countdownBG = new Sprite();
+			countdownBG.graphics.lineStyle(10,0xADEA49);
 			countdownBG.graphics.beginFill(0xFFFFFF);
 			countdownBG.graphics.drawCircle(0,0,40);
 			countdownBG.visible = false;
 			greenRim.addChild(countdownBG);
-			
+			greenRim.addChild(countdownTF);			
+
 			
 			countdownTF.x =  (countdownTF.width*-.5);
-			countdownTF.y =  440// messageBox.height*.45//(countdownTF.height*-.5);
-			countdownBG.y = 470// messageBox.height*.50
+			countdownTF.y =  -255;
+			countdownBG.y = -220;
+
+			
+			resetInput();
+		}
+		
+		public function resetInput():void
+		{
+			userXML = <user moderated="false"><username></username><twitter></twitter><photo></photo><interests></interests></user>
+
+			photoTaken=false;
+			
+			progressDisplay.gotoAndStop(1);	
+			
+			gotoAndStop("photo");
+			
+			finishBtn.visible = false;
+			
+			if(interestsInput && interestsInput.parent)messageBox.removeChild(interestsInput);
+			if(keyboard && keyboard.parent) removeChild(keyboard);
+
+			if(namesInput && namesInput.parent)messageBox.removeChild(namesInput);
+
+			TweenMax.allTo([greenRim, faceHarness], 0,{x:0});
+
+			
+			stageNum=1;
+			setUpStage1();
+		}
+		
+		
+		private function setUpStage1():void
+		{
+			titleTF.text = "Your Photo";	
+			
+			cameraBtn.visible = true;
+		
+			countdownTF.alpha=.1;			
 			countdownTF.text = "";
-			
-			greenRim.addChild(countdownTF);
-			
-			
+					
 			faceBitmap.x = faceBitmap.y =  faceBitmap.width*-.5;
 			
 			//buttons
@@ -143,6 +169,7 @@ package rhythm.displayObjects
 			cancelBtn.addEventListener(MouseEvent.MOUSE_DOWN, doCancelClick,false,0,true);
 			cameraBtn.addEventListener(MouseEvent.MOUSE_DOWN, shutterClicked,false,0,true);
 			
+			this.y=0;
 			TweenMax.from(this,.5,{y:-1920,ease:Sine.easeOut});
 
 		}
@@ -151,7 +178,8 @@ package rhythm.displayObjects
 		
 		public function setCameraView(bmd:BitmapData):void
 		{
-			if(!photoTaken) camBMD.draw(bmd, faceMatrix);
+			//if(!photoTaken) camBMD.draw(bmd, faceMatrix);
+			if(!photoTaken) camBMD.copyPixels(bmd,new Rectangle(0,0, bmd.width, bmd.height), new Point(0,0), rimMask);
 
 		}
 		
@@ -211,20 +239,20 @@ package rhythm.displayObjects
 		}
 		
 		private function doNextClick(e:MouseEvent):void
-		{
-			
-			trace("next click, stageNum:",stageNum);
+		{			
+			progressDisplay.gotoAndStop(stageNum+1);
+
 
 			switch(stageNum)
 			{
 				case 1:					
-					progressDisplay.gotoAndStop(2);
 										
 					stage2();
 	
 				break;
 				case 2:
 					
+					//save interests to XML
 					for each (var int:String in interestsInput.userInterests)
 					{
 						userXML.interests.appendChild(XML("<interest>"+int+"</interest>"));
@@ -233,7 +261,6 @@ package rhythm.displayObjects
 					finishBtn.visible = true;
 					nextBtn.visible = false;
 					
-					progressDisplay.gotoAndStop(3);
 
 					stage3();
 
@@ -290,7 +317,6 @@ package rhythm.displayObjects
 			
 			currentNameTF =namesInput.nameTF;
 			stage.focus = currentNameTF;
-
 	
 			namesInput.nameTF.addEventListener(FocusEvent.FOCUS_IN, setNameTF,false,0,true);
 			namesInput.twitterTF.addEventListener(FocusEvent.FOCUS_IN, setNameTF,false,0,true);
