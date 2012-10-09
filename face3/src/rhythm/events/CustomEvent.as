@@ -20,7 +20,8 @@ package rhythm.events
 			// CLASS CONSTANTS
 			//--------------------------------------
 			public static const CAMERA_FOUND:String="CAMERA_FOUND";			
-			public static const INPUT_CANCELLED:String="INPUT_CANCELLED";			
+			public static const INPUT_CANCELLED:String="INPUT_CANCELLED";	
+			public static const INPUT_COMPLETE:String="INPUT_COMPLETE";			
 			public static const KEY_PRESSED:String = "KEY_PRESSED";
 
 			/**

@@ -209,29 +209,7 @@ package rhythm.displayObjects
 
 			switch(stageNum)
 			{
-				case 1:
-					//save final photo
-					var photoName:String = Maths.getUniqueName();
-					
-					
-					var fileRef:FileReference = new FileReference();
-					
-					encoder = new JPGEncoder(90);
-					photoBytes = encoder.encode(camBMD);
-					
-					var file:File = File.desktopDirectory.resolvePath("kioskData");
-					file= file.resolvePath(photoName+".jpg"); 
-					var fs:FileStream = new FileStream();
-					
-					//open file in write mode
-					fs.open(file,FileMode.WRITE);
-					//write bytes from the byte array
-					fs.writeBytes(photoBytes);
-					//close the file
-					fs.close();	
-					
-					userXML.photo = photoName+".jpg";
-					
+				case 1:					
 					progressDisplay.gotoAndStop(2);
 										
 					stage2();
@@ -255,6 +233,9 @@ package rhythm.displayObjects
 
 				break;
 				case 3:
+					nameInput = namesInput.nameTF.text;
+					twitterInput = namesInput.twitterTF.text;
+					
 					messageBox.removeChild(namesInput);
 					removeChild(keyboard);
 					finish();
@@ -317,10 +298,37 @@ package rhythm.displayObjects
 		}
 		
 		private function finish():void
-		{
+		{			
 			gotoAndStop("added");
 			titleTF.text = "Complete";
+			
 			TweenMax.allTo([faceHarness, greenRim],.5,{x:0,ease:Sine.easeInOut});
+						
+			//save final photo
+			var photoName:String = Maths.getUniqueName();			
+			
+			var fileRef:FileReference = new FileReference();
+			
+			encoder = new JPGEncoder(90);
+			photoBytes = encoder.encode(camBMD);
+			
+			//insert path from config
+			var file:File = File.desktopDirectory.resolvePath("kioskData");
+			file= file.resolvePath(photoName+".jpg"); 
+			var fs:FileStream = new FileStream();
+			
+			fs.open(file,FileMode.WRITE);
+			fs.writeBytes(photoBytes);
+			fs.close();	
+			
+			//add to xml
+			userXML.photo = photoName+".jpg";
+			userXML.username = nameInput;
+			userXML.twitter = twitterInput;
+			
+//			trace("userXML",userXML);
+			
+			//tween offstage
 			TweenMax.to(this,.5,{delay:4,y:-1920,ease:Sine.easeIn, onComplete:finished});
 
 		}
@@ -328,10 +336,7 @@ package rhythm.displayObjects
 		private function finished():void
 		{
 			trace("finished");
-			dispatchEvent(new CustomEvent(CustomEvent.INPUT_CANCELLED));
-
-				// save xml and dispatch finished event
-			
+			dispatchEvent(new CustomEvent(CustomEvent.INPUT_COMPLETE));			
 		}		
 		
 		
@@ -346,7 +351,6 @@ package rhythm.displayObjects
 					keyboard.currentCase == "lower"	? keyboard.setUppercase() : keyboard.setLowercase();
 					break;
 				case "del":
-					//currentNameString.slice( 0, -1 );
 					var currentStr:String = currentNameTF.text 
 					currentNameTF.text = currentStr.substring(-1,currentStr.length-1);
 					break;
@@ -356,10 +360,7 @@ package rhythm.displayObjects
 				default:
 					currentNameTF.appendText(pressed);
 					break;
-			}
-			
-			//currentNameTF.text = currentNameString;
-			
+			}			
 		}
 		
 		private function retakePhoto(e:MouseEvent):void

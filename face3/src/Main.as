@@ -345,10 +345,9 @@ package
 		private function overlay3d():void
 		{
 			addBtn = new AddBtn();
-			addBtn.x = 850;
+			addBtn.x = 800;
 			addBtn.y = 790;
-			addBtn.scaleX = addBtn.scaleY = 1.2;
-		//	addBtn.alpha = 0;
+			addBtn.alpha = 0;
 			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
 			addChild(addBtn);
 		}
@@ -356,6 +355,9 @@ package
 		private function doAddClick(event:MouseEvent):void
 		{
 			if(inputMsg)inputMsg.visible = true;
+			
+			addBtn.removeEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
+			removeChild(addBtn);
 			
 			faceTrackLostDelay = int.MAX_VALUE;
 			
@@ -376,7 +378,6 @@ package
 			
 			inputMsg.visible = false;
 			inputMode = false;
-			removeChild(addBtn);
 			
 			//tweetCloud.resume3d();
 		}
