@@ -33,6 +33,7 @@ package
 	import rhythm.displayObjects.MessageInputScreens;
 	import rhythm.events.CustomEvent;
 	import rhythm.utils.CameraMotionDetect;
+	import rhythm.utils.DataIO;
 	import rhythm.utils.Maths;
 	
 	import tweetcloud.TweetCloud;
@@ -115,10 +116,10 @@ package
 		private var faceTrackLostDelay:Number;
 
 		private var addBtn:AddBtn;
+		private var dataIO:DataIO;
+		private var config:XML;
 		
-
-		
-		
+	
 		public function Main() 
 		{
 			//debug = true;
@@ -133,13 +134,18 @@ package
 			stage.nativeWindow.height = stage.fullScreenHeight;
 			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
 
-			setUpCam();
-			initDetector();	
-			//inputMode = true;
-			
+			dataIO = new DataIO();
+			dataIO.addEventListener(CustomEvent.DATA_READY, onDataReady, false, 0, true);
+			dataIO.getData();		
 			
 		}
 		
+		private function onDataReady(e:CustomEvent):void
+		{
+			config = dataIO.configXML;
+			setUpCam();
+			initDetector();	
+		}		
 		
 		private function setUpCam():void
 		{
@@ -221,6 +227,7 @@ package
 			
 			//input overlay
 			inputMsg = new MessageInput();
+			inputMsg.initWithConfig(config);
 			addChildAt(inputMsg, getChildIndex(_camOutput)+1);	
 			inputMsg.visible = false;
 			
