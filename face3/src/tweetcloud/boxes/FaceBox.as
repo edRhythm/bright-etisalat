@@ -25,11 +25,13 @@ package tweetcloud.boxes
 		private var light:PointLight;
 		private var rawBMD:BitmapData;
 		private var rimMask:RimMask;
+		private var config:XML;
 		
 		
-		public function FaceBox(pointLight:PointLight)
+		public function FaceBox(pointLight:PointLight, configXML:XML)
 		{
 			light = pointLight
+			config = configXML;
 			
 			faceMatrix = new Matrix();
 			faceMatrix.rotate( -90 * (Math.PI / 180 ) );
@@ -57,8 +59,8 @@ package tweetcloud.boxes
 		private function addRing():void
 		{
 			faceRing = new FaceRim3d();
-			faceRing.textOverlay.overlayTextTopTF.text = "Monkey Tits";
-			faceRing.textOverlay.overlayTextBtmTF.text = "Heron Shit";
+			faceRing.textOverlay.overlayTextTopTF.text = config.text.ringTextTop;
+			faceRing.textOverlay.overlayTextBtmTF.text = config.text.ringTextBtm;
 			
 			ringPlane = new Mesh(new PlaneGeometry(1024, 1024));	
 			ringPlane.rotationX = -90;

@@ -59,6 +59,8 @@ package tweetcloud.boxes
 		private var bodyImageLoader:ImageLoader;
 		private var profileImageLoader:ImageLoader;
 		
+		private var xml:XML;
+		
 		
 		public function TweetBox()
 		{
@@ -73,6 +75,7 @@ package tweetcloud.boxes
 		public function populateTweet(tweet:XML):void
 		{
 			setDefaultFrameByLabel('tweet');
+			xml = tweet;
 			
 			realName = 'Dave';
 			twitterName = tweet.User;
@@ -91,13 +94,9 @@ package tweetcloud.boxes
 		
 		private function repopulateTweet():void
 		{
-			nameField.text = realName;
+			// nameField.text = realName;
 			
-			handleField.text = twitterName;
-			handleField.y = nameField.y + nameField.textHeight + 5;
-			tweetBird.y = handleField.y + 3.5;
-			
-			handleField.alpha = tweetBird.alpha = .5;
+			handleField.text = twitterName;			
 			messageField.text = message;
 			
 			interestsField.text = interests;
@@ -146,6 +145,7 @@ package tweetcloud.boxes
 		public function populateTweetImage(tweet:XML):void
 		{
 			setDefaultFrameByLabel('tweetImage');
+			xml = tweet;
 			
 			twitterName = tweet.User;
 			message = tweet.Message;
@@ -205,6 +205,7 @@ package tweetcloud.boxes
 		public function populateMessage(message:XML):void
 		{			
 			setDefaultFrameByLabel('message');
+			xml = message;
 			
 			moderated = message.@moderated;
 			realName = message.username;
@@ -292,6 +293,27 @@ package tweetcloud.boxes
 			}
 			
 			return updateTexture;
+		}
+		
+		public function getInterests():Array
+		{
+			var interests:Array = [];
+			
+			if (type == 'tweet' || type == 'tweetImage')
+			{
+				for (var i:int=0; i<xml.Tags.Tag.length(); ++i)
+				{
+					interests.push(xml.Tags.Tag[i].toString().toLowerCase());
+				}
+			}
+			else {
+				for (i=0; i<xml.interests.interest.length(); ++i)
+				{
+					interests.push(xml.interests.interest[i].toString().toLowerCase());
+				}
+			}
+			
+			return interests;
 		}
 	}
 }

@@ -25,6 +25,8 @@ package rhythm.events
 			public static const KEY_PRESSED:String = "KEY_PRESSED";
 			public static const DATA_READY:String = "DATA_READY";
 			public static const TWEETBOX_READY:String = "TWEETBOX_READY";
+			public static const SHOW_BANNER:String = "SHOW_BANNER";
+			public static const CLOSE_3D_MESSAGE:String = "CLOSE_3D_MESSAGE";
 
 			/**
 			 * A text message that can be passed to an event handler

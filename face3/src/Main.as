@@ -135,8 +135,8 @@ package
 			
 			stage.align = StageAlign.TOP_LEFT;
 						
-			stage.nativeWindow.height = stage.fullScreenHeight;
-			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
+//			stage.nativeWindow.height = stage.fullScreenHeight;
+//			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
 
 			dataIO = new DataIO();
 			dataIO.addEventListener(CustomEvent.DATA_READY, onDataReady, false, 0, true);
@@ -209,6 +209,9 @@ package
 			tweetCloud = new TweetCloud();
 			addChildAt(tweetCloud,0);
 			tweetCloud.init(dataIO);
+			tweetCloud.addEventListener(CustomEvent.SHOW_BANNER, onShow3dMessage, false, 0, true);
+			tweetCloud.addEventListener(CustomEvent.CLOSE_3D_MESSAGE, onClose3dMessage, false, 0, true);
+
 			
 			faceFor3d = new BitmapData(1024,1024);
 			
@@ -281,7 +284,16 @@ package
 
 
 		}
-					
+		
+		protected function onClose3dMessage(event:Event):void
+		{
+			addBtn.visible = true;	
+		}
+		
+		private function onShow3dMessage(event:Event):void
+		{
+			addBtn.visible = false;
+		}					
 
 		private function cameraReadyHandler( event:Event ):void
 		{			
@@ -408,7 +420,8 @@ package
 			addBtn.removeEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
 			if(addBtn.parent)removeChild(addBtn);
 
-
+			tweetCloud.resetAllPlanes();
+			
 			inputMode = true;
 			
 			inputMsg.addEventListener(CustomEvent.INPUT_CANCELLED, closeInput,false,0,true);

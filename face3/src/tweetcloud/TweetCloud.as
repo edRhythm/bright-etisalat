@@ -12,6 +12,8 @@ package tweetcloud
 	import away3d.primitives.PlaneGeometry;
 	import away3d.textures.BitmapTexture;
 	
+	import com.greensock.TweenMax;
+	import com.greensock.easing.*;
 	import com.greensock.loading.ImageLoader;
 	
 	import flash.display.BitmapData;
@@ -23,6 +25,7 @@ package tweetcloud
 	
 	import rhythm.events.CustomEvent;
 	import rhythm.utils.DataIO;
+	import rhythm.utils.Maths;
 	
 	import tweetcloud.boxes.Blob;
 	import tweetcloud.boxes.BlobBox;
@@ -50,6 +53,7 @@ package tweetcloud
 		private var paused:Boolean;
 		
 		private var dataIO:DataIO;
+		private var banners:Banner;
 		
 		
 		public function TweetCloud()
@@ -65,6 +69,10 @@ package tweetcloud
 			createInitialBoxes();
 			createBlobs(35);
 			
+			banners = new Banner();
+			addChild(banners);
+			
+			
 			pause3d(false);
 			
 			// stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownStage);
@@ -78,7 +86,7 @@ package tweetcloud
 		
 		private function createFace():void
 		{	
-			faceBox = new FaceBox(pointLight);
+			faceBox = new FaceBox(pointLight,dataIO.configXML );
 
 			view.scene.addChild(faceBox.cameraPlane);
 			view.scene.addChild(faceBox.ringPlane);
@@ -88,6 +96,7 @@ package tweetcloud
 		{
 			faceBox.updateFaceBMD(faceBMD);
 		}
+
 		
 		private function setUpAway3D():void
 		{
@@ -132,6 +141,8 @@ package tweetcloud
 			var box:MessageWrapper = new MessageWrapper();
 			box.init(nextId, displayBox, boxesHolder, pointLight, fogMethod, dataIO);
 			box.addEventListener('reset all planes', onResetAllPlanes, false, 0, true);	
+			box.addEventListener(CustomEvent.SHOW_BANNER, onShowBanner, false, 0, true);
+			box.addEventListener(CustomEvent.CLOSE_3D_MESSAGE, onCloseMessage, false, 0, true);
 			
 			boxes.push(box);
 			view.scene.addChild(box.container);				
@@ -139,6 +150,28 @@ package tweetcloud
 			
 			box.stage = stage;
 			++nextId;
+		}
+		
+		private function onShowBanner(event:CustomEvent):void
+		{
+			//trace(event.params.interests);
+			TweenMax.allTo([faceBox.cameraPlane, faceBox.ringPlane],.5,{z:5000, ease:Sine.easeIn});
+
+			
+			if(event.params.interests.length>0)
+			{			
+				var bannerName:String = event.params.interests[Maths.randomIntBetween(0,event.params.interests.length-1)];
+				trace("showing banner",bannerName);
+				
+				banners.showBanner(bannerName);
+			}
+		}
+		
+		private function onCloseMessage(e:CustomEvent):void
+		{
+			TweenMax.to(faceBox.cameraPlane,.5,{z:0, ease:Expo.easeOut});
+			TweenMax.to(faceBox.ringPlane,.5,{z:-1, ease:Expo.easeOut});
+			banners.closeBanner();
 		}
 		
 		private function createTweetBoxes():void
@@ -184,10 +217,12 @@ package tweetcloud
 		public function resetAllPlanes():void
 		{
 			onResetAllPlanes(null);
+
 		}
 		
 		private function onResetAllPlanes(event:Event):void
 		{
+			trace("onResetAllPlanes");
 			for each (var box:MessageWrapper in boxes)
 			{
 				box.resetPlane();
@@ -224,6 +259,7 @@ package tweetcloud
 			{
 				removeEventListener(Event.ENTER_FRAME, onEnterFrame);
 				paused=true;
+				resetAllPlanes();
 				
 				if (updateData)
 				{

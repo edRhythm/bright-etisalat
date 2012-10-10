@@ -90,9 +90,7 @@ package tweetcloud.boxes
 			plane.x = int(planeBounds.@diameter)/2 + Math.random()*int(planeBounds.@diameter);
 			
 			plane.y = int(planeBounds.@bot) + Math.random()*(Math.abs(int(planeBounds.@bot))-Math.abs(int(holeBounds.@bot)));
-			if (Math.random() < .5) plane.y = int(holeBounds.@top) + Math.random()*(Math.abs(int(planeBounds.@top))-Math.abs(int(holeBounds.@top)));
-			
-			// plane.y = 1000;
+			if (Math.random() > .7) plane.y = int(holeBounds.@top) + Math.random()*(Math.abs(int(planeBounds.@top))-Math.abs(int(holeBounds.@top)));
 			
 			plane.rotationX = ((plane.y / 30)-90);
 			plane.rotationY = -90;
@@ -124,6 +122,10 @@ package tweetcloud.boxes
 			TweenMax.to(container, settings.zoomDuration, {rotationY:90, ease:Quad.easeInOut});
 			TweenMax.to(plane, settings.zoomDuration, {x:1300, y:settings.offsets.plane, z:0, scaleX:1.575, scaleZ:1.575, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox, onUpdate:switchTextureByZ});
 			TweenMax.to(mat, settings.zoomDuration, {alpha:1, ease:Quad.easeInOut});
+			
+			dispatchEvent(new CustomEvent(CustomEvent.SHOW_BANNER, true, false, {interests:box.getInterests()}));
+
+
 		}
 		
 		private function showTweetBox():void
@@ -136,6 +138,7 @@ package tweetcloud.boxes
 			
 			TweenMax.to(box, .14, {alpha:1, ease:Quad.easeOut});
 			box.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownBox, false, 0, true);
+			
 		}
 		
 		private function onMouseDownBox(event:MouseEvent):void
@@ -156,6 +159,8 @@ package tweetcloud.boxes
 				TweenMax.to(container, .7, {rotationY:settings.container.rotationY, ease:Quad.easeOut});
 				TweenMax.to(plane, .7, {x:settings.plane.x, y:settings.plane.y, z:settings.plane.z, scaleX:settings.plane.scale, scaleZ:settings.plane.scale, rotationX:settings.plane.rotationX, ease:Sine.easeOut, onComplete:resumeUpdate, onUpdate:switchTextureByZ});
 				TweenMax.to(mat, .4, {alpha:settings.matAlpha, ease:Quad.easeInOut});
+				
+				dispatchEvent(new CustomEvent(CustomEvent.CLOSE_3D_MESSAGE, true));
 			}			
 		}
 		
@@ -198,8 +203,6 @@ package tweetcloud.boxes
 			{
 				switchTextureByZ();
 				container.rotationY += spinSpeed;
-				
-				trace('===> rotationY:', container.rotationY);
 				
 				// refresh with new data as it goes round
 				if (container.rotationY > 395) 

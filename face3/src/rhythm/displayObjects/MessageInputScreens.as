@@ -300,7 +300,7 @@ package rhythm.displayObjects
 		{
 			titleTF.text = "Your Interests";
 			
-			interestsInput = new InterestsInput(["Sport","Travel","Entertainment","Social", "Music","Business"]);
+			interestsInput = new InterestsInput(["Football","Travel","Entertainment","Social", "Music","Business"]);
 			messageBox.addChild(interestsInput);
 			interestsInput.x = 85;
 			interestsInput.y = (interestsInput.height*-.6)
