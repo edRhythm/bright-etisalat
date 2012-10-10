@@ -69,8 +69,9 @@ package tweetcloud
 		}
 		
 		private function createFace():void
-		{
+		{	
 			faceBox = new FaceBox(pointLight);
+
 			view.scene.addChild(faceBox.cameraPlane);
 			view.scene.addChild(faceBox.ringPlane);
 		}

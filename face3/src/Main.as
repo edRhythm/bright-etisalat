@@ -1,30 +1,24 @@
 package
 {
 	
+	import com.adobe.protocols.dict.events.NoMatchEvent;
 	import com.greensock.TweenMax;
 	import com.greensock.easing.*;
 	import com.greensock.loading.ImageLoader;
-	import com.greensock.loading.LoaderMax;
 	import com.greensock.plugins.*;
 	import com.quasimondo.bitmapdata.CameraBitmap;
-	import com.quasimondo.bitmapdata.ThresholdBitmap;
 	
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Graphics;
 	import flash.display.Sprite;
-	import flash.display.Stage;
 	import flash.display.StageAlign;
-	import flash.display.StageScaleMode;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
 	import flash.filesystem.File;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
-	import flash.media.Camera;
-	import flash.system.Security;
-	import flash.system.SecurityPanel;
 	import flash.text.TextField;
 	
 	import jp.maaash.ObjectDetection.ObjectDetector;
@@ -33,7 +27,7 @@ package
 	
 	import net.hires.debug.Stats;
 	
-	import rhythm.displayObjects.MessageInputScreens;
+	import rhythm.displayObjects.MovieSaver;
 	import rhythm.events.CustomEvent;
 	import rhythm.utils.CameraMotionDetect;
 	import rhythm.utils.DataIO;
@@ -46,7 +40,6 @@ package
 
 	public class Main extends Sprite
 	{
-		
 		private var detector    :ObjectDetector;
 		private var options     :ObjectDetectorOptions;
 		
@@ -110,21 +103,25 @@ package
 		private var faceBMD:BitmapData;
 		private var faceMatrix:Matrix;
 		
-		private var rimMask:RimMask;
-
 		private var tempFaceBMP:Bitmap;
 		private var doing3dTransition:Boolean;
 		
 		private var inputMsg:MessageInput;
 		private var inputMode:Boolean;
-		private var timeOutDelay:Number;
-		//private var faceTrackLostDelay:Number;
+		private var timeOutDelay3d:Number;
 
 		private var addBtn:AddBtn;
 		private var dataIO:DataIO;
 		private var config:XML;
-		private var timeOut:TimeOut;
+		private var timeOut3d:TimeOut;
 		private var headerFooterHarness:Sprite;
+		
+		private var faceSearchMessage:SearchingMessage;
+		private var noActionSaver:MovieSaver;
+		private var timeOutMotion:TimeOut;
+		private var timeOutDelayMotion:Number;
+		private var motionSSOn:Boolean;
+
 		
 	
 		public function Main() 
@@ -149,12 +146,17 @@ package
 		
 		private function onDataReady(e:CustomEvent):void
 		{
+			dataIO.removeEventListener(CustomEvent.DATA_READY, onDataReady);
+
 			config = dataIO.configXML;
-			trace("config",config);
-			timeOutDelay = Number(config.timeOutDelay);
+			//trace("config",config);
+			
+			timeOutDelay3d = Number(config.timeOutDelay3d);
+			timeOutDelayMotion = Number(config.timeOutDelayMotion);
 			
 			setUpCam();
-			initDetector();	
+			initDetector();
+
 		}		
 		
 		private function setUpCam():void
@@ -189,11 +191,7 @@ package
 
 			//face detected mask
 			faceRect = new Rectangle(0, 0, 600,600);
-			rimMask = new RimMask();
 			
-			//detection end delay
-			//faceTrackLostDelay = 5;
-
 			//motion tracking area
 			blobMaxW = dh*.8;
 			blobMinW = dh*.5;
@@ -210,7 +208,7 @@ package
 			//3d
 			tweetCloud = new TweetCloud();
 			addChildAt(tweetCloud,0);
-			tweetCloud.init();
+			tweetCloud.init(dataIO);
 			
 			faceFor3d = new BitmapData(1024,1024);
 			
@@ -223,6 +221,10 @@ package
 			camOutputMask.y = h;
 			camOutputMask.visible=false;
 			addChild(camOutputMask);
+			
+			//no motion saver
+			noActionSaver = new MovieSaver();
+			addChild(noActionSaver);
 			
 			//header footer
 			var hf:BitmapData = new HeaderFooter();	
@@ -258,20 +260,28 @@ package
 			addChildAt(inputMsg, getChildIndex(_camOutput)+1);	
 			inputMsg.visible = false;
 			
-			//timeout
-			timeOut = new TimeOut(timeOutDelay, timeOutReached);
-			
+			//timeouts
+			timeOut3d = new TimeOut(timeOutDelay3d, timeOutReached3d);
+			timeOutMotion = new TimeOut(timeOutDelayMotion, timeOutReachedMotion);
 			
 			if(config.showStats=="true")
 			{//stats
 				var stats:Stats = new Stats();
 				stats.y = 200;
-				//stats.scaleX = stats.scaleY = 2;
 				addChild( stats);
 			}
-						
+			
+			//search message
+			faceSearchMessage = new SearchingMessage();
+			faceSearchMessage.searchTF.text = "Searching for people";
+			faceSearchMessage.x = w;
+			faceSearchMessage.y = 200;
+			addChild(faceSearchMessage);
+			
+
+
 		}
-						
+					
 
 		private function cameraReadyHandler( event:Event ):void
 		{			
@@ -304,7 +314,6 @@ package
 				faceFor3d.lock();
 				faceFor3d.fillRect(new Rectangle(0,0,faceFor3d.width, faceFor3d.height),0);
 
-			//	if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,40, 2000, 2000), new Point(0,0),rimMask);
 				if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,40, 2000, 2000), new Point(0,0));
 						
 				faceFor3d.unlock();
@@ -327,6 +336,8 @@ package
 		private function show3d():void
 		{
 			
+			faceSearchMessage.searchTF.text = "Face found!";
+
 			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
 
 			//kill partigen
@@ -337,8 +348,6 @@ package
 				killParticle(ParticleCross(particleHarness.getChildAt(0)));
 			}
 			
-			//stop calls to stopTracking
-			//TweenMax.killDelayedCallsTo(exit3d);
 			
 			//mask transition
 			_camOutput.mask = camOutputMask;
@@ -350,23 +359,27 @@ package
 				onComplete:hideCamOutput});
 			
 			
-			//TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:1.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});	
 			
 			TweenMax.to(_camHarness,.5,{transformAroundCenter:{scaleX:.9, scaleY:.9}, ease:Sine.easeIn});	
 			
 			//start timeOut
-			timeOut.start();
-			stage.addEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut,false, 0,true);
+			timeOut3d.start();
+			stage.addEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut3d,false, 0,true);
+			
+			//kill motion timeout & ss
+			timeOutMotion.cancel();
+			noActionSaver.stopVideo();
 
 		}
 		
 		private function hideCamOutput():void
 		{
 			//trace("hideCamOutput");
-			if( !inputMode)
-			{
-				tweetCloud.resume3d();		
-			}
+			
+			faceSearchMessage.visible = false;
+
+			if( !inputMode)	tweetCloud.resume3d();		
+
 			
 			_camOutput.visible=false;
 			_camOutput.mask = null;
@@ -381,8 +394,8 @@ package
 		{
 			addBtn = new AddBtn();
 			addBtn.x = 800;
-			addBtn.y = 790;
-			addBtn.alpha = 0;//.5;
+			addBtn.y = 695;
+			addBtn.alpha = 0;
 			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick, false, 0, true);
 			addChild(addBtn);
 		}
@@ -394,10 +407,7 @@ package
 					
 			addBtn.removeEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
 			if(addBtn.parent)removeChild(addBtn);
-			
-			//faceTrackLostDelay = int.MAX_VALUE;
-			
-			//TweenMax.killDelayedCallsTo(exit3d);
+
 
 			inputMode = true;
 			
@@ -525,9 +535,14 @@ package
 			_trackMotion=true;
 			_camOutput.mask = null;
 			
-			timeOut.cancel();
-			stage.removeEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut);
-
+			timeOut3d.cancel();
+			stage.removeEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut3d);
+			
+			faceSearchMessage.visible = true;
+			faceSearchMessage.searchTF.text = "Searching for faces";
+			
+			//start video saver timeout tracking
+			timeOutMotion.reset();
 		}
 		
 		
@@ -621,9 +636,29 @@ package
 			
 			if(blobAreaScaled.width>blobMinW && blobAreaScaled.width<blobMaxW && blobAreaScaled.height>blobMinH && blobAreaScaled.height<blobMaxH && blobAreaScaled.height<blobAreaScaled.width)
 			{	
+				//trace("found a body");
 				TweenMax.allTo([trackerShape, bigCross, trackMessage], .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),ease:Sine.easeInOut},0.25,fadeOutTracker);
 				
 				TweenMax.allTo([trackerShape, bigCross, trackMessage], .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut},0.25);
+			
+				//clear saver
+				if(motionSSOn)
+				{
+					motionSSOn=false;
+					noActionSaver.stopVideo();
+				}else{
+					//reset saver timeout
+					timeOutMotion.reset();
+				}
+				
+				//change search message
+				if(faceSearchMessage.searchTF.text != "Searching for faces") faceSearchMessage.searchTF.text = "Searching for faces";
+				TweenMax.killDelayedCallsTo(showPeopleMessage);
+
+
+			}else{
+				
+				if(faceSearchMessage.searchTF.text != "Searching for people") TweenMax.delayedCall(2, showPeopleMessage);
 			}
 		}
 		
@@ -638,6 +673,7 @@ package
 				addChild(bigCross);
 				
 				trackMessage = new MessageHarness();
+				trackMessage.messageTF.text = config.text.motionTrackMessage;
 				addChild(trackMessage);
 
 			}
@@ -710,18 +746,28 @@ package
 			
 		}
 		
-		private function doResetTimeOut(event:MouseEvent):void
+		private function doResetTimeOut3d(event:MouseEvent):void
 		{
-			timeOut.reset();
-			
+			timeOut3d.reset();
 		}
 		
-		private function timeOutReached():void
+		
+		private function timeOutReached3d():void
 		{
-			trace("timeOut!");
+			//trace("timeOut 3d!");
 			exit3d();
 			
 		}
+		
+		
+		private function timeOutReachedMotion():void
+		{
+			motionSSOn = true;
+
+			noActionSaver.restartVideo();
+			
+			timeOutMotion.cancel();	
+		}	
 		
 		
 		
@@ -732,7 +778,13 @@ package
 			_camHarness.addChild(new Bitmap( cameraDetectionBitmap.bitmapData));
 			_camOutput.addChild(_camHarness );
 			removeChild(_infoPanel);			
-		}		
+		}	
+		
+		private function showPeopleMessage():void
+		{
+			if(faceSearchMessage.searchTF.text != "Searching for people") faceSearchMessage.searchTF.text = "Searching for people";
+
+		}
 	}
 }
 

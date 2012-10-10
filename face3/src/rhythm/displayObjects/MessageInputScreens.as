@@ -68,6 +68,7 @@ package rhythm.displayObjects
 		private var currentNameTF:TextField;
 		private var config:XML;
 		private var rimMask:BitmapData;
+		private var rawBMD:BitmapData;
 
 		
 		
@@ -94,6 +95,7 @@ package rhythm.displayObjects
 			faceMatrix.scale(photoScale,photoScale);
 			
 			camBMD = new BitmapData(512*photoScale,512*photoScale,true,0x000000);
+			rawBMD	 = new BitmapData(512*photoScale,512*photoScale,true,0x000000);
 			
 			
 			faceBitmap = new Bitmap(camBMD,"never",true);
@@ -178,8 +180,23 @@ package rhythm.displayObjects
 		
 		public function setCameraView(bmd:BitmapData):void
 		{
+			
 			//if(!photoTaken) camBMD.draw(bmd, faceMatrix);
-			if(!photoTaken) camBMD.copyPixels(bmd,new Rectangle(0,0, bmd.width, bmd.height), new Point(0,0), rimMask);
+			if(!photoTaken) 
+			{
+				rawBMD.lock();
+				rawBMD.draw(bmd, faceMatrix);
+				rawBMD.unlock();
+	
+				camBMD.lock();
+				camBMD.copyPixels(rawBMD,new Rectangle(0,0, rawBMD.width, rawBMD.height), new Point(0,0), rimMask);
+				camBMD.unlock();
+
+			}
+			
+			//save rawBMD!
+
+	//		if(!photoTaken) camBMD.copyPixels(bmd,new Rectangle(0,0, bmd.width, bmd.height), new Point(0,0), rimMask);
 
 		}
 		
@@ -216,10 +233,9 @@ package rhythm.displayObjects
 		{
 			photoTaken = true;
 			countdownBG.visible = false;
-			
-			
-				TweenMax.to(faceHarness,.25,{delay:1, alpha:0, repeat:1, yoyo:true, repeatDelay:.5});
-				TweenMax.to(greenRim,.25,{delay:1,scaleX:0.2, scaleY:.2, ease:Sine.easeIn, repeat:1, yoyo:true, onComplete:showLastPhoto});
+					
+			TweenMax.to(faceHarness,.25,{delay:1, alpha:0, repeat:1, yoyo:true, repeatDelay:.5});
+			TweenMax.to(greenRim,.25,{delay:1,scaleX:0.2, scaleY:.2, ease:Sine.easeIn, repeat:1, yoyo:true, onComplete:showLastPhoto});
 
 		}
 		
@@ -342,7 +358,7 @@ package rhythm.displayObjects
 			var fileRef:FileReference = new FileReference();
 			
 			encoder = new JPGEncoder(90);
-			photoBytes = encoder.encode(camBMD);
+			photoBytes = encoder.encode(rawBMD);
 			
 			//insert path from config
 			var picDirectoryName:String = "kiosk"+String(config.kiosk.@id);
