@@ -3,6 +3,8 @@ package
 	
 	import com.greensock.TweenMax;
 	import com.greensock.easing.*;
+	import com.greensock.loading.ImageLoader;
+	import com.greensock.loading.LoaderMax;
 	import com.greensock.plugins.*;
 	import com.quasimondo.bitmapdata.CameraBitmap;
 	import com.quasimondo.bitmapdata.ThresholdBitmap;
@@ -16,6 +18,7 @@ package
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.filesystem.File;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -35,6 +38,7 @@ package
 	import rhythm.utils.CameraMotionDetect;
 	import rhythm.utils.DataIO;
 	import rhythm.utils.Maths;
+	import rhythm.utils.TimeOut;
 	
 	import tweetcloud.TweetCloud;
 	
@@ -113,11 +117,14 @@ package
 		
 		private var inputMsg:MessageInput;
 		private var inputMode:Boolean;
-		private var faceTrackLostDelay:Number;
+		private var timeOutDelay:Number;
+		//private var faceTrackLostDelay:Number;
 
 		private var addBtn:AddBtn;
 		private var dataIO:DataIO;
 		private var config:XML;
+		private var timeOut:TimeOut;
+		private var headerFooterHarness:Sprite;
 		
 	
 		public function Main() 
@@ -143,6 +150,9 @@ package
 		private function onDataReady(e:CustomEvent):void
 		{
 			config = dataIO.configXML;
+			trace("config",config);
+			timeOutDelay = Number(config.timeOutDelay);
+			
 			setUpCam();
 			initDetector();	
 		}		
@@ -182,7 +192,7 @@ package
 			rimMask = new RimMask();
 			
 			//detection end delay
-			faceTrackLostDelay = 5;
+			//faceTrackLostDelay = 5;
 
 			//motion tracking area
 			blobMaxW = dh*.8;
@@ -217,13 +227,30 @@ package
 			//header footer
 			var hf:BitmapData = new HeaderFooter();	
 			var headerFooter:Bitmap = new Bitmap(hf);
-		//	headerFooter.mouseEnabled = false;
-			addChild(headerFooter);
+			headerFooterHarness = new Sprite();
+			headerFooterHarness.mouseEnabled = false;
+			headerFooterHarness.addChild(headerFooter);
+			addChild(headerFooterHarness);
 			
+			//qr code
+			var file:File = File.desktopDirectory.resolvePath("kioskData");
+			file= file.resolvePath("qrCode.png"); 
+			var qrLoader:ImageLoader =  new ImageLoader(file.url, {name:"qrCode", container:headerFooterHarness,x:950, y:1800});
+			qrLoader.load(true);
 			
 			//debug 
 			faceRectContainer = new Sprite();
 			addChild( faceRectContainer );	
+			
+			//face detection area on screen
+			if(config.showFaceDetectArea=="true")
+			{
+				var dectectionAreaSprite:Sprite = new Sprite();
+				dectectionAreaSprite.graphics.lineStyle(1,0xFF0000);
+				dectectionAreaSprite.graphics.drawRect(540-dectAreaW, 0, dectAreaW*2, dectAreaH*2);
+				addChild(dectectionAreaSprite);
+			}
+
 			
 			//input overlay
 			inputMsg = new MessageInput();
@@ -231,14 +258,20 @@ package
 			addChildAt(inputMsg, getChildIndex(_camOutput)+1);	
 			inputMsg.visible = false;
 			
-			//stats
-			var stats:Stats = new Stats();
-			stats.y = 200;
-			//stats.scaleX = stats.scaleY = 2;
-			addChild( stats);
+			//timeout
+			timeOut = new TimeOut(timeOutDelay, timeOutReached);
+			
+			
+			if(config.showStats=="true")
+			{//stats
+				var stats:Stats = new Stats();
+				stats.y = 200;
+				//stats.scaleX = stats.scaleY = 2;
+				addChild( stats);
+			}
 						
 		}
-		
+						
 
 		private function cameraReadyHandler( event:Event ):void
 		{			
@@ -257,12 +290,6 @@ package
 						tbm.scaleX = tbm.scaleY = scaleFactor; 
 						tbm.x = 300;
 						addChild( tbm );
-						
-						//face detection area on screen
-						var dectectionAreaSprite:Sprite = new Sprite();
-						dectectionAreaSprite.graphics.lineStyle(1,0xFFFFFF);
-						dectectionAreaSprite.graphics.drawRect(540-dectAreaW, 0, dectAreaW*2, dectAreaH*2);
-						addChild(dectectionAreaSprite);
 					}
 				}
 								
@@ -277,15 +304,16 @@ package
 				faceFor3d.lock();
 				faceFor3d.fillRect(new Rectangle(0,0,faceFor3d.width, faceFor3d.height),0);
 
-				if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,40, 2000, 2000), new Point(0,0),rimMask);
-			 						
+			//	if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,40, 2000, 2000), new Point(0,0),rimMask);
+				if(faceRect)faceFor3d.copyPixels(faceBMD,new Rectangle(faceRect.x,40, 2000, 2000), new Point(0,0));
+						
 				faceFor3d.unlock();
 				
 				if(! inputMode)
 				{
 					tweetCloud.updateFace(faceFor3d);
 				}else{
-					inputMessage();
+					inputMsg.setCameraView(faceFor3d)		
 				}
 
 			}else{
@@ -294,11 +322,6 @@ package
 			}
 		}
 		
-		
-		private function inputMessage():void
-		{
-			inputMsg.setCameraView(faceFor3d)		
-		}
 		
 		
 		private function show3d():void
@@ -315,11 +338,12 @@ package
 			}
 			
 			//stop calls to stopTracking
-			TweenMax.killDelayedCallsTo(stopFaceTracking);
+			//TweenMax.killDelayedCallsTo(exit3d);
 			
 			//mask transition
 			_camOutput.mask = camOutputMask;
 			TweenMax.to(camOutputMask,.5,{
+	//			transformAroundPoint:{point:new Point(w, 340),height:512, width:512},
 				transformAroundPoint:{point:new Point(w, 740),height:512, width:512},
 				colorTransform:{brightness:2},
 				ease:Sine.easeIn,
@@ -329,6 +353,10 @@ package
 			//TweenMax.to(_camHarness,3,{colorMatrixFilter:{saturation:1.3, contrast:1.6, brightness:1.2}, ease:Sine.easeInOut});	
 			
 			TweenMax.to(_camHarness,.5,{transformAroundCenter:{scaleX:.9, scaleY:.9}, ease:Sine.easeIn});	
+			
+			//start timeOut
+			timeOut.start();
+			stage.addEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut,false, 0,true);
 
 		}
 		
@@ -354,39 +382,39 @@ package
 			addBtn = new AddBtn();
 			addBtn.x = 800;
 			addBtn.y = 790;
-			addBtn.alpha = 0;
-			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
+			addBtn.alpha = 0;//.5;
+			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick, false, 0, true);
 			addChild(addBtn);
 		}
 		
 		private function doAddClick(event:MouseEvent):void
 		{
-			if(inputMsg)inputMsg.visible = true;
-			
+			inputMsg.visible = true;
+			inputMsg.resetInput();
+					
 			addBtn.removeEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
-			removeChild(addBtn);
+			if(addBtn.parent)removeChild(addBtn);
 			
-			faceTrackLostDelay = int.MAX_VALUE;
+			//faceTrackLostDelay = int.MAX_VALUE;
 			
-			TweenMax.killDelayedCallsTo(stopFaceTracking);
+			//TweenMax.killDelayedCallsTo(exit3d);
 
 			inputMode = true;
 			
 			inputMsg.addEventListener(CustomEvent.INPUT_CANCELLED, closeInput,false,0,true);
+			inputMsg.addEventListener(CustomEvent.INPUT_COMPLETE, closeInput,false,0,true);
+
 		}
 		
 		private function closeInput(event:Event):void
 		{
 			inputMsg.removeEventListener(CustomEvent.INPUT_CANCELLED, closeInput);
-			
-			TweenMax.killDelayedCallsTo(stopFaceTracking);
-
-			faceTrackLostDelay = 5;
+			inputMsg.removeEventListener(CustomEvent.INPUT_COMPLETE, closeInput);
 			
 			inputMsg.visible = false;
 			inputMode = false;
 			
-			//tweetCloud.resume3d();
+			overlay3d();
 		}
 		
 		private function initDetector():void
@@ -440,7 +468,7 @@ package
 				if(_detected) 
 				{
 					_detected = false;
-					TweenMax.delayedCall(faceTrackLostDelay,stopFaceTracking);				
+					//TweenMax.delayedCall(faceTrackLostDelay,stopFaceTracking);				
 				}else if(_trackMotion){
 					
 					//start motion tracking
@@ -453,10 +481,10 @@ package
 			}
 		}
 		
-		private function stopFaceTracking():void
+		private function exit3d():void
 		{
-			trace("stopFaceTracking");
-			TweenMax.killDelayedCallsTo(stopFaceTracking);
+			trace("exit3d");
+			//TweenMax.killDelayedCallsTo(stopFaceTracking);
 			
 			if(inputMode)
 			{
@@ -464,7 +492,13 @@ package
 			}else{
 				tweetCloud.pause3d();
 			}
-
+			
+			if(addBtn.parent)
+			{
+				addBtn.removeEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
+				removeChild(addBtn);
+				addBtn=null;
+			}
 			
 			_camOutput.visible=true;
 			
@@ -479,8 +513,8 @@ package
 
 			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn});
 				
-		//	TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, colorMatrixFilter:{saturation:1, contrast:1, brightness:1}, ease:Sine.easeInOut});	
-				
+			TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, ease:Sine.easeInOut});	
+				//, colorMatrixFilter:{saturation:1, contrast:1, brightness:1},
 				
 			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );				
 		}
@@ -490,6 +524,10 @@ package
 			detector.addEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
 			_trackMotion=true;
 			_camOutput.mask = null;
+			
+			timeOut.cancel();
+			stage.removeEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut);
+
 		}
 		
 		
@@ -671,6 +709,21 @@ package
 			addChild(_infoPanel);
 			
 		}
+		
+		private function doResetTimeOut(event:MouseEvent):void
+		{
+			timeOut.reset();
+			
+		}
+		
+		private function timeOutReached():void
+		{
+			trace("timeOut!");
+			exit3d();
+			
+		}
+		
+		
 		
 		private function doCamSelect(e:MouseEvent):void
 		{		

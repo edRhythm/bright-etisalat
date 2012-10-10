@@ -36,7 +36,7 @@ package tweetcloud.boxes
 					
 			cameraPlane = new Mesh(new PlaneGeometry(512, 512));	
 			cameraPlane.rotationX = -90;
-			cameraPlane.y = 280;
+			cameraPlane.y = -120//280;
 			cameraPlane.scaleX = cameraPlane.scaleZ = 1.75;
 			
 			
@@ -56,7 +56,7 @@ package tweetcloud.boxes
 			
 			ringPlane = new Mesh(new PlaneGeometry(1024, 1024));	
 			ringPlane.rotationX = -90;
-			ringPlane.y = 50;
+			ringPlane.y = -100//50;
 			ringPlane.z = -1;
 			ringPlane.x = 360;
 			ringPlane.scaleX = ringPlane.scaleZ = 1.75;
