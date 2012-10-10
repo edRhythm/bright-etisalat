@@ -17,6 +17,7 @@ package tweetcloud
 	import flash.display.BitmapData;
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.MouseEvent;
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
 	
@@ -48,7 +49,6 @@ package tweetcloud
 		private var faceBox:FaceBox;
 		private var paused:Boolean;
 		
-		private var testMessage:String = 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.';
 		private var dataIO:DataIO;
 		
 		
@@ -63,9 +63,17 @@ package tweetcloud
 			
 			createFace();
 			createInitialBoxes();
-			createBlobs(40);
+			createBlobs(35);
 			
-			pause3d();
+			pause3d(false);
+			
+			// stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownStage);
+		}
+		
+		private function onMouseDownStage(event:Event):void
+		{
+			dataIO.addEventListener(CustomEvent.DATA_READY, onFreshDataReady, false, 0, true);
+			dataIO.update();
 		}
 		
 		private function createFace():void
@@ -101,10 +109,6 @@ package tweetcloud
 			pointLight.ambient = 1;
 			view.scene.addChild(pointLight);
 			
-//			directonalLight = new DirectionalLight();
-//			directonalLight.specular = .5;
-//			view.scene.addChild(directonalLight);
-			
 			fogMethod = new FogMethod(1000, 5000, 0xffffff);
 			
 			addChild(view); 
@@ -126,7 +130,7 @@ package tweetcloud
 		private function createBox(displayBox:TweetBox):void
 		{
 			var box:MessageWrapper = new MessageWrapper();
-			box.init(nextId, displayBox, boxesHolder, pointLight, fogMethod);
+			box.init(nextId, displayBox, boxesHolder, pointLight, fogMethod, dataIO);
 			box.addEventListener('reset all planes', onResetAllPlanes, false, 0, true);	
 			
 			boxes.push(box);
@@ -143,9 +147,11 @@ package tweetcloud
 			
 			for (var i:int=0; i<tweets.Profile.length(); ++i)
 			{				
-				var displayBox:TweetBox = new TweetBoxDisplay();				
-				displayBox.populateTweet(tweets.Profile[i]);
+				var displayBox:TweetBox = new TweetBoxDisplay();
 				displayBox.addEventListener(CustomEvent.TWEETBOX_READY, onTweetBoxReady, false, 0, true);
+				
+				if (String(tweets.Profile[i].BodyImage).length) displayBox.populateTweetImage(tweets.Profile[i]);
+				else displayBox.populateTweet(tweets.Profile[i]);				
 			}
 		}
 		
@@ -175,6 +181,11 @@ package tweetcloud
 			createBox(displayBox);
 		}
 		
+		public function resetAllPlanes():void
+		{
+			onResetAllPlanes(null);
+		}
+		
 		private function onResetAllPlanes(event:Event):void
 		{
 			for each (var box:MessageWrapper in boxes)
@@ -202,25 +213,37 @@ package tweetcloud
 		
 		private function onEnterFrame(event:Event):void
 		{			
-			for (var i:int=0; i<boxes.length; ++i)
-			{
-				boxes[i].update();
-			}
-			
-			for (i=0; i<blobs.length; ++i)
-			{
-				blobs[i].container.rotationY += blobs[i].spinSpeed;
-			}
-			
+			for (var i:int=0; i<boxes.length; ++i) { boxes[i].update(); }			
+			for (i=0; i<blobs.length; ++i) { blobs[i].container.rotationY += blobs[i].spinSpeed; }			
 			view.render();
 		}
 		
-		public function pause3d():void
+		public function pause3d(updateData:Boolean=true):void
 		{
 			if(!paused)
 			{
 				removeEventListener(Event.ENTER_FRAME, onEnterFrame);
 				paused=true;
+				
+				if (updateData)
+				{
+					dataIO.addEventListener(CustomEvent.DATA_READY, onFreshDataReady, false, 0, true);
+					dataIO.update();
+				}				
+			}
+		}
+		
+		private function onFreshDataReady(event:Event):void
+		{
+			dataIO.removeEventListener(CustomEvent.DATA_READY, onFreshDataReady);	
+			
+			var tweets:XML = dataIO.getRandomTweets(Number(dataIO.configXML.threeD.@tweets));
+			var messages:XML = dataIO.getRandomMessages(Number(dataIO.configXML.threeD.@messages));
+			
+			for (var i:int=0; i<boxes.length; ++i)
+			{
+				if (i < tweets.Profile.length()) boxes[i].updateTweet(tweets.Profile[i]);
+				else boxes[i-tweets.Profile.length()].updateMessage(messages.user[i-tweets.Profile.length()]);
 			}
 		}
 		

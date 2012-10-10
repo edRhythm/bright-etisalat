@@ -39,8 +39,8 @@ package rhythm.utils
 			getConfig();			
 			getKioskData();
 			
-			// getTweets();
-			tweetsLoaderErrorHandler(null);
+			getTweets();
+			// tweetsLoaderErrorHandler(null);
 		}
 		
 		private function listFiles():void
@@ -147,6 +147,7 @@ package rhythm.utils
 		private function allXMLLoaded():void
 		{
 			resetUsedTweets();
+			resetUsedMessages();
 			dispatchEvent(new CustomEvent(CustomEvent.DATA_READY, true));
 		}		
 		
@@ -208,6 +209,12 @@ package rhythm.utils
 			{
 				message.@used = 'false';
 			}
+		}
+		
+		public function update():void
+		{
+			getKioskData();			
+			getTweets();
 		}
 	}
 }

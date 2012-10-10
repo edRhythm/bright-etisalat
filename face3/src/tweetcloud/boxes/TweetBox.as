@@ -48,8 +48,16 @@ package tweetcloud.boxes
 		private var profilePath:String;
 		private var profileImage:Sprite;
 		
+		private var bodyImagePath:String;
+		private var bodyImage:Sprite;
+		
 		private var bgColours:Array = [0xe91385, 0x94bc2b, 0x003edd];
 		private var bgColour:uint;
+		private var moderated:String;
+
+		private var messageImageLoader:ImageLoader;
+		private var bodyImageLoader:ImageLoader;
+		private var profileImageLoader:ImageLoader;
 		
 		
 		public function TweetBox()
@@ -66,10 +74,17 @@ package tweetcloud.boxes
 		{
 			setDefaultFrameByLabel('tweet');
 			
-			this.realName = 'Dave';
-			this.twitterName = tweet.User;
-			this.message = tweet.Message;
-			this.profilePath = tweet.ProfileImage;
+			realName = 'Dave';
+			twitterName = tweet.User;
+			message = tweet.Message;
+			profilePath = tweet.ProfileImage;
+			
+			interests = '';			
+			for (var j:int=0; j<tweet.Tags.Tag.length(); ++j)
+			{
+				interests += tweet.Tags.Tag[j].toString();
+				if (j < tweet.Tags.Tag.length()-1) interests += ', '; 
+			}
 			
 			repopulateTweet();
 		}
@@ -82,19 +97,38 @@ package tweetcloud.boxes
 			handleField.y = nameField.y + nameField.textHeight + 5;
 			tweetBird.y = handleField.y + 3.5;
 			
-			handleField.alpha = tweetBird.alpha = .35;
+			handleField.alpha = tweetBird.alpha = .5;
 			messageField.text = message;
+			
+			interestsField.text = interests;
+			interestsField.alpha = .7;
 			
 			bgColour = bgColours[Math.floor(Math.random()*bgColours.length)];
 			TweenMax.to(bg, 0, {tint:bgColour});
 			if (blank) TweenMax.to(blank, 0, {tint:bgColour});
 			
+			killImageLoaders();
+			
 			var filePath:String = String(File.desktopDirectory.url) + '/kioskData/images/' + profilePath;
 			var defaultPath:String = String(File.desktopDirectory.url) + '/kioskData/images/default/twitter.png';			
-			var imageLoader:ImageLoader = new ImageLoader(filePath, {alternateURL:defaultPath, onComplete:onProfileImageLoaderComplete});
-			imageLoader.load(true);
+			profileImageLoader = new ImageLoader(filePath, {alternateURL:defaultPath, onComplete:onProfileImageLoaderComplete});
+			profileImageLoader.load(true);
 		}
-			
+		
+		private function killImageLoaders():void
+		{
+			if (profileImageLoader) killImageLoader(profileImageLoader);
+			if (bodyImageLoader) killImageLoader(messageImageLoader);
+			if (messageImageLoader) killImageLoader(messageImageLoader);
+		}
+		
+		private function killImageLoader(loader:ImageLoader):void
+		{
+			loader.cancel();
+			loader.dispose();
+			loader = null;
+		}
+		
 		private function onProfileImageLoaderComplete(e:LoaderEvent):void
 		{
 			profileImage = e.target.content;
@@ -109,13 +143,13 @@ package tweetcloud.boxes
 		
 		/// TWEET IMAGE SETUP		
 		
-		public function populateTweetImage(twitterName:String, message:String, image:Sprite=null):void
+		public function populateTweetImage(tweet:XML):void
 		{
 			setDefaultFrameByLabel('tweetImage');
 			
-			this.twitterName = twitterName;
-			this.message = message;
-			this.image = image;
+			twitterName = tweet.User;
+			message = tweet.Message;
+			bodyImagePath = tweet.BodyImage;
 			
 			repopulateTweetImage();
 		}	
@@ -125,33 +159,45 @@ package tweetcloud.boxes
 			handleField.text = twitterName;
 			tweetBird.x = handleField.x + handleField.width - handleField.textWidth - tweetBird.width - 5;
 			
-			handleField.alpha = tweetBird.alpha = .35;
+			handleField.alpha = tweetBird.alpha = .5;
 			messageField.text = message;
 			
 			bgColour = bgColours[Math.floor(Math.random()*bgColours.length)];
 			TweenMax.to(bg, 0, {tint:bgColour});
 			if (blank) TweenMax.to(blank, 0, {tint:bgColour});
 			
-			if (image != null)
-			{
-				while (tweetImage.numChildren > 0) tweetImage.removeChildAt(0);
-				tweetImage.addChild(image);
-				tweetImage.mask = tweetImageMask;
-				
-				// find best image fit
-				if (image.width < image.height)
-				{
-					image.height = tweetImageMask.height;
-					image.scaleX = image.scaleY;
-					image.x = -(image.width - tweetImageMask.width)/2;
-				} 
-				else {
-					image.width = tweetImageMask.width;
-					image.scaleY = image.scaleX;
-					image.y = -(image.height - tweetImageMask.height)/2;
-				}
-			}			
+			killImageLoaders();
+			
+			var filePath:String = String(File.desktopDirectory.url) + '/kioskData/images/body_images/' + bodyImagePath;
+			var defaultPath:String = String(File.desktopDirectory.url) + '/kioskData/images/default/twitter.png';			
+			bodyImageLoader = new ImageLoader(filePath, {alternateURL:defaultPath, onComplete:onBodyImageLoaderComplete});
+			bodyImageLoader.load(true);
 		}
+		
+		private function onBodyImageLoaderComplete(e:LoaderEvent):void
+		{
+			image = e.target.content;
+			
+			while (tweetImage.numChildren > 0) tweetImage.removeChildAt(0);
+			tweetImage.addChild(image);
+			tweetImage.mask = tweetImageMask;
+			
+			// find best image fit
+			if (image.width < image.height)
+			{
+				image.height = tweetImageMask.height;
+				image.scaleX = image.scaleY;
+				image.x = -(image.width - tweetImageMask.width)/2;
+			} 
+			else {
+				image.width = tweetImageMask.width;
+				image.scaleY = image.scaleX;
+				image.y = -(image.height - tweetImageMask.height)/2;
+			}
+			
+			dispatchEvent(new CustomEvent(CustomEvent.TWEETBOX_READY, false, false, { displayBox:this }));
+		}
+		
 		
 		
 		/// MESSAGE SETUP		
@@ -160,6 +206,7 @@ package tweetcloud.boxes
 		{			
 			setDefaultFrameByLabel('message');
 			
+			moderated = message.@moderated;
 			realName = message.username;
 			twitterName = message.twitter;
 			messageImagePath = message.photo;
@@ -176,21 +223,31 @@ package tweetcloud.boxes
 		
 		private function repopulateMessage():void
 		{
-			nameField.text = realName;			
-			handleField.text = twitterName;
+			nameField.text = handleField.text = '';
+			tweetBird.visible = false;
+			
+			if (moderated == 'true')
+			{
+				nameField.text = realName;
+				handleField.text = twitterName;
+				tweetBird.visible = true;
+			}
+			
 			tweetBird.x = handleField.x + handleField.width/2 - handleField.textWidth/2 - tweetBird.width - 1;
 			
-			handleField.alpha = tweetBird.alpha = .35;
+			handleField.alpha = tweetBird.alpha = .5;
 			interestsField.text = interests;
 			
 			bgColour = bgColours[Math.floor(Math.random()*bgColours.length)];
 			TweenMax.to(bg, 0, {tint:bgColour});
 			if (blank) TweenMax.to(blank, 0, {tint:bgColour});
 			
+			killImageLoaders();
+			
 			var filePath:String = String(File.desktopDirectory.url) + '/kioskData/images/' + messageImagePath;
 			var defaultPath:String = String(File.desktopDirectory.url) + '/kioskData/images/default/twitter.png';			
-			var imageLoader:ImageLoader = new ImageLoader(filePath, {alternateURL:defaultPath, onComplete:onMessageImageLoaderComplete});
-			imageLoader.load(true);
+			messageImageLoader = new ImageLoader(filePath, {alternateURL:defaultPath, onComplete:onMessageImageLoaderComplete});
+			messageImageLoader.load(true);
 		}
 		
 		private function onMessageImageLoaderComplete(e:LoaderEvent):void

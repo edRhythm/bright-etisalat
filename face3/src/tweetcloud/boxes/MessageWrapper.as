@@ -25,6 +25,9 @@ package tweetcloud.boxes
 	import flash.ui.Mouse;
 	import flash.ui.MouseCursor;
 	
+	import rhythm.events.CustomEvent;
+	import rhythm.utils.DataIO;
+	
 	
 	public class MessageWrapper extends EventDispatcher
 	{
@@ -46,6 +49,7 @@ package tweetcloud.boxes
 		
 		private var settings:Object;
 		private var boxesHolder:Sprite;
+		private var dataIO:DataIO;
 		
 		
 		public function MessageWrapper()
@@ -53,8 +57,9 @@ package tweetcloud.boxes
 			super();
 		}
 		
-		public function init(boxId:int, displayBox:TweetBox, boxesHolder:Sprite, light:PointLight, fogMethod:FogMethod):void
+		public function init(boxId:int, displayBox:TweetBox, boxesHolder:Sprite, light:PointLight, fogMethod:FogMethod, dataIO:DataIO):void
 		{
+			this.dataIO = dataIO;
 			this.boxesHolder = boxesHolder;
 			id = boxId;
 			pointLight = light;
@@ -63,7 +68,7 @@ package tweetcloud.boxes
 			spinSpeed = .1 + Math.random()*.2;
 			doUpdate = true;
 			
-			createPlane(displayBox);
+			createPlane();
 			createMaterial();
 			updateDisplayBox(displayBox);
 		}
@@ -76,23 +81,25 @@ package tweetcloud.boxes
 			mat.addMethod(fog);
 		}
 		
-		private function createPlane(displayBox:TweetBox):void
+		private function createPlane():void
 		{
-			var targetY:Number = -1000 + Math.random()*780;
-			if (Math.random() < .5) targetY = 400 + Math.random()*600;
+			var planeBounds:XMLList = dataIO.configXML.threeD.plane;
+			var holeBounds:XMLList = dataIO.configXML.threeD.hole;
 			
-			var targetScale:Number = .8+Math.random()*.3;
-			
-			// plane = new Mesh(new PlaneGeometry(displayBox.width, displayBox.height));
 			plane = new Mesh(new PlaneGeometry(256, 256));
-			plane.rotationX = ((targetY / 30)-90);
+			plane.x = int(planeBounds.@diameter)/2 + Math.random()*int(planeBounds.@diameter);
+			
+			plane.y = int(planeBounds.@bot) + Math.random()*(Math.abs(int(planeBounds.@bot))-Math.abs(int(holeBounds.@bot)));
+			if (Math.random() < .5) plane.y = int(holeBounds.@top) + Math.random()*(Math.abs(int(planeBounds.@top))-Math.abs(int(holeBounds.@top)));
+			
+			// plane.y = 1000;
+			
+			plane.rotationX = ((plane.y / 30)-90);
 			plane.rotationY = -90;
-			plane.scale(.01);
+			plane.scale(.8+Math.random()*.3);
 			
 			plane.mouseEnabled = true;
 			plane.addEventListener(MouseEvent3D.MOUSE_DOWN, onMouseDownPlane);
-			
-			TweenMax.to(plane, 2 + Math.random()*10, {x:800 + Math.random()*1000, y:targetY, scaleX:targetScale, scaleZ:targetScale, ease:Elastic.easeOut, delay:.5 + Math.random()*2});
 			
 			container = new ObjectContainer3D();
 			container.rotationY = Math.random()*360;
@@ -111,11 +118,11 @@ package tweetcloud.boxes
 				zoomDuration: .6
 			};
 			
-			if (box.type == 'message') settings.offsets = { box:-185, plane:135 }
+			if (box.type == 'message') settings.offsets = { box:-185, plane:135 };
 			else settings.offsets = { box:-120, plane:80 };
 			
 			TweenMax.to(container, settings.zoomDuration, {rotationY:90, ease:Quad.easeInOut});
-			TweenMax.to(plane, settings.zoomDuration, {x:1300, y:settings.offsets.plane, z:0, scaleX:1.575, scaleZ:1.575, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox});
+			TweenMax.to(plane, settings.zoomDuration, {x:1300, y:settings.offsets.plane, z:0, scaleX:1.575, scaleZ:1.575, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox, onUpdate:switchTextureByZ});
 			TweenMax.to(mat, settings.zoomDuration, {alpha:1, ease:Quad.easeInOut});
 		}
 		
@@ -147,7 +154,7 @@ package tweetcloud.boxes
 				
 				// reset plane etc
 				TweenMax.to(container, .7, {rotationY:settings.container.rotationY, ease:Quad.easeOut});
-				TweenMax.to(plane, .7, {x:settings.plane.x, y:settings.plane.y, z:settings.plane.z, scaleX:settings.plane.scale, scaleZ:settings.plane.scale, rotationX:settings.plane.rotationX, ease:Sine.easeOut, onComplete:resumeUpdate});
+				TweenMax.to(plane, .7, {x:settings.plane.x, y:settings.plane.y, z:settings.plane.z, scaleX:settings.plane.scale, scaleZ:settings.plane.scale, rotationX:settings.plane.rotationX, ease:Sine.easeOut, onComplete:resumeUpdate, onUpdate:switchTextureByZ});
 				TweenMax.to(mat, .4, {alpha:settings.matAlpha, ease:Quad.easeInOut});
 			}			
 		}
@@ -192,17 +199,37 @@ package tweetcloud.boxes
 				switchTextureByZ();
 				container.rotationY += spinSpeed;
 				
+				trace('===> rotationY:', container.rotationY);
+				
 				// refresh with new data as it goes round
-				if (container.rotationY > 360) 
+				if (container.rotationY > 395) 
 				{
 					container.rotationY -= 360; // keep within 360
 					
-//					var displayBox:TweetBox = new TweetBoxDisplay();
-//					displayBox.populateTweet('Edmund Baldry', '@edbaldry', 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.');
-//					
-					updateDisplayBox(); // refresh with new message
+					if (box.type == 'tweet' || box.type == 'tweetImage') updateTweet(dataIO.getRandomTweets(1).Profile[0]);
+					else updateMessage(dataIO.getRandomMessages(1).user[0]);
 				}
 			}
+		}
+		
+		public function updateTweet(tweet:XML):void
+		{
+			box.addEventListener(CustomEvent.TWEETBOX_READY, onUpdateBoxReady, false, 0, true);
+			
+			if (String(tweet.BodyImage).length) box.populateTweetImage(tweet);
+			else box.populateTweet(tweet);				
+		}
+		
+		public function updateMessage(message:XML):void
+		{
+			box.addEventListener(CustomEvent.TWEETBOX_READY, onUpdateBoxReady, false, 0, true);
+			box.populateMessage(message);
+		}
+		
+		private function onUpdateBoxReady(event:CustomEvent):void
+		{
+			box.removeEventListener(CustomEvent.TWEETBOX_READY, onUpdateBoxReady);
+			updateDisplayBox(box);
 		}
 	}
 }
