@@ -17,6 +17,7 @@ package tweetcloud
 	import flash.display.BitmapData;
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.MouseEvent;
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
 	
@@ -63,9 +64,17 @@ package tweetcloud
 			
 			createFace();
 			createInitialBoxes();
-			createBlobs(40);
+			createBlobs(35);
 			
-			pause3d();
+			pause3d(false);
+			
+			// stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownStage);
+		}
+		
+		private function onMouseDownStage(event:Event):void
+		{
+			dataIO.addEventListener(CustomEvent.DATA_READY, onDataReady, false, 0, true);
+			dataIO.update();
 		}
 		
 		private function createFace():void
@@ -142,9 +151,11 @@ package tweetcloud
 			
 			for (var i:int=0; i<tweets.Profile.length(); ++i)
 			{				
-				var displayBox:TweetBox = new TweetBoxDisplay();				
-				displayBox.populateTweet(tweets.Profile[i]);
+				var displayBox:TweetBox = new TweetBoxDisplay();
 				displayBox.addEventListener(CustomEvent.TWEETBOX_READY, onTweetBoxReady, false, 0, true);
+				
+				if (String(tweets.Profile[i].BodyImage).length) displayBox.populateTweetImage(tweets.Profile[i]);
+				else displayBox.populateTweet(tweets.Profile[i]);				
 			}
 		}
 		
@@ -172,6 +183,11 @@ package tweetcloud
 			var displayBox:TweetBox = event.params.displayBox;
 			displayBox.removeEventListener(CustomEvent.TWEETBOX_READY, onMessageBoxReady);
 			createBox(displayBox);
+		}
+		
+		public function resetAllPlanes():void
+		{
+			onResetAllPlanes(null);
 		}
 		
 		private function onResetAllPlanes(event:Event):void
@@ -214,12 +230,37 @@ package tweetcloud
 			view.render();
 		}
 		
-		public function pause3d():void
+		public function pause3d(updateData:Boolean=true):void
 		{
 			if(!paused)
 			{
 				removeEventListener(Event.ENTER_FRAME, onEnterFrame);
 				paused=true;
+				
+				if (updateData)
+				{
+					dataIO.addEventListener(CustomEvent.DATA_READY, onDataReady, false, 0, true);
+					dataIO.update();
+				}				
+			}
+		}
+		
+		private function onDataReady(event:Event):void
+		{
+			dataIO.removeEventListener(CustomEvent.DATA_READY, onDataReady);	
+			
+			var tweets:XML = dataIO.getRandomTweets(Number(dataIO.configXML.threeD.@tweets));
+			var messages:XML = dataIO.getRandomMessages(Number(dataIO.configXML.threeD.@messages));
+			
+			trace(boxes.length, tweets.Profile.length(), messages.user.length());
+			
+			for (var i:int=0; i<boxes.length; ++i)
+			{
+				if (i < tweets.Profile.length()) boxes[i].updateTweet(tweets.Profile[i]);
+				else boxes[i-tweets.Profile.length()].updateMessage(messages.user[i-tweets.Profile.length()]);
+				
+				if (i < tweets.Profile.length()) trace('\n', i, boxes[i], tweets.Profile[i]);
+				else trace('\n', i-tweets.Profile.length(), boxes[i-tweets.Profile.length()], messages.user[i-tweets.Profile.length()]); 
 			}
 		}
 		

@@ -25,6 +25,8 @@ package tweetcloud.boxes
 	import flash.ui.Mouse;
 	import flash.ui.MouseCursor;
 	
+	import rhythm.events.CustomEvent;
+	
 	
 	public class MessageWrapper extends EventDispatcher
 	{
@@ -115,7 +117,7 @@ package tweetcloud.boxes
 			else settings.offsets = { box:-120, plane:80 };
 			
 			TweenMax.to(container, settings.zoomDuration, {rotationY:90, ease:Quad.easeInOut});
-			TweenMax.to(plane, settings.zoomDuration, {x:1300, y:settings.offsets.plane, z:0, scaleX:1.575, scaleZ:1.575, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox});
+			TweenMax.to(plane, settings.zoomDuration, {x:1300, y:settings.offsets.plane, z:0, scaleX:1.575, scaleZ:1.575, rotationX:-90, ease:Sine.easeOut, onComplete:showTweetBox, onUpdate:switchTextureByZ});
 			TweenMax.to(mat, settings.zoomDuration, {alpha:1, ease:Quad.easeInOut});
 		}
 		
@@ -147,7 +149,7 @@ package tweetcloud.boxes
 				
 				// reset plane etc
 				TweenMax.to(container, .7, {rotationY:settings.container.rotationY, ease:Quad.easeOut});
-				TweenMax.to(plane, .7, {x:settings.plane.x, y:settings.plane.y, z:settings.plane.z, scaleX:settings.plane.scale, scaleZ:settings.plane.scale, rotationX:settings.plane.rotationX, ease:Sine.easeOut, onComplete:resumeUpdate});
+				TweenMax.to(plane, .7, {x:settings.plane.x, y:settings.plane.y, z:settings.plane.z, scaleX:settings.plane.scale, scaleZ:settings.plane.scale, rotationX:settings.plane.rotationX, ease:Sine.easeOut, onComplete:resumeUpdate, onUpdate:switchTextureByZ});
 				TweenMax.to(mat, .4, {alpha:settings.matAlpha, ease:Quad.easeInOut});
 			}			
 		}
@@ -200,9 +202,29 @@ package tweetcloud.boxes
 //					var displayBox:TweetBox = new TweetBoxDisplay();
 //					displayBox.populateTweet('Edmund Baldry', '@edbaldry', 'I am a twat. I am. I don\'t care what any fucker says. I am and will always be a twat. Thank you for listening. Now cock off.');
 //					
-					updateDisplayBox(); // refresh with new message
+					// updateDisplayBox(); // refresh with new message
 				}
 			}
+		}
+		
+		public function updateTweet(tweet:XML):void
+		{
+			box.addEventListener(CustomEvent.TWEETBOX_READY, onUpdateBoxReady, false, 0, true);
+			
+			if (String(tweet.BodyImage).length) box.populateTweetImage(tweet);
+			else box.populateTweet(tweet);				
+		}
+		
+		public function updateMessage(message:XML):void
+		{
+			box.addEventListener(CustomEvent.TWEETBOX_READY, onUpdateBoxReady, false, 0, true);
+			box.populateMessage(message);
+		}
+		
+		private function onUpdateBoxReady(event:CustomEvent):void
+		{
+			box.removeEventListener(CustomEvent.TWEETBOX_READY, onUpdateBoxReady);
+			updateDisplayBox(box);
 		}
 	}
 }
