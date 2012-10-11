@@ -127,7 +127,7 @@ package
 	
 		public function Main() 
 		{
-			//debug = true;
+			debug = true;
 			_faceDetection = true;
 			
 			_trackMotion = true;
@@ -252,7 +252,7 @@ package
 			headerFooterHarness.mouseEnabled = false;
 			headerFooterHarness.addChild(headerFooter);
 			addChild(headerFooterHarness);
-			if(debugPanel)headerFooterHarness.addChild(debugPanel);
+			if(config.debug.showOutput=="true"  && debugPanel)headerFooterHarness.addChild(debugPanel);
 			
 			//qr code
 			var file:File = File.desktopDirectory.resolvePath("kioskData");
