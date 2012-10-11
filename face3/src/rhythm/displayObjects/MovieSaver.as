@@ -12,7 +12,7 @@ package rhythm.displayObjects
 		
 		public function MovieSaver()
 		{
-			var vidFile:File = File.desktopDirectory.resolvePath("kioskData/videos");
+			var vidFile:File = File.desktopDirectory.resolvePath("kioskData/images/videos");
 			vidFile= vidFile.resolvePath("saver.mp4"); 
 			
 			saverVideo = new VideoLoader(vidFile.url, {name:"saverVideo", container:this, autoPlay:false, y:100, visible:false});

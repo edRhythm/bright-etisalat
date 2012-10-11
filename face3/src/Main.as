@@ -239,7 +239,7 @@ package
 			
 			//qr code
 			var file:File = File.desktopDirectory.resolvePath("kioskData");
-			file= file.resolvePath("qrCode.png"); 
+			file= file.resolvePath("images/qrCode.png"); 
 			var qrLoader:ImageLoader =  new ImageLoader(file.url, {name:"qrCode", container:headerFooterHarness,x:950, y:1800});
 			qrLoader.load(true);
 			

@@ -34,7 +34,7 @@ package tweetcloud
 			
 			for (var i:int=0; i<fileNames.length; i++)
 			{
-				var file:File = File.desktopDirectory.resolvePath("kioskData/bannerImages");
+				var file:File = File.desktopDirectory.resolvePath("kioskData/images/banners");
 				file= file.resolvePath(fileNames[i]+".png"); 
 				trace("file url",file.url);
 				queue.append( new ImageLoader(file.url, {name:fileNames[i]}));
