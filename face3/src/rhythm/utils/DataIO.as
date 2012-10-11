@@ -34,7 +34,7 @@ package rhythm.utils
 		
 		public function getData():void
 		{
-			// listFiles();
+			listFiles();
 			
 			getConfig();			
 			getKioskData();
@@ -50,6 +50,8 @@ package rhythm.utils
 			
 			for (var i:int=0; i<listing.length; ++i)
 			{
+				dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String(listing[i].name + ' is directory: '+ listing[i].isDirectory+ ' is symbolic link? '+ listing[i].isSymbolicLink)}));
+
 				trace(listing[i].name, 'is directory?', listing[i].isDirectory, 'is symbolic link?', listing[i].isSymbolicLink);
 			}
 		}
@@ -62,6 +64,7 @@ package rhythm.utils
 				configXML = XML(fs.readUTFBytes(fs.bytesAvailable));
 			fs.close();
 			
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:'configXML loaded'}));
 			trace('\tconfigXML loaded');
 		}
 		
@@ -73,6 +76,8 @@ package rhythm.utils
 			{
 				var file:File = File.desktopDirectory.resolvePath('kioskData/localXML/' + fileName + '.xml');
 				trace('\t\tloading', file.nativePath);
+				dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('loading '+ file.nativePath)}));
+
 				
 				var fs:FileStream = new FileStream();
 				fs.open(file, FileMode.READ);
@@ -81,6 +86,8 @@ package rhythm.utils
 			}
 			
 			trace('\tkioskXML loaded (' + kioskXML.length + ' files)');
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('kioskXML loaded (' + kioskXML.length + ' files)')}));
+
 			
 			// merge all kiosk message data
 			kioskXMLMerged = <users></users>;
@@ -103,6 +110,8 @@ package rhythm.utils
 			req.requestHeaders.push(new URLRequestHeader("Content-Type", "application/soap+xml"));
 			req.method = URLRequestMethod.POST;
 			
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('tweets url: ' + configXML.tweetsURL)}));
+			
 			var reqData:String = "<?xml version=\"1.0\" encoding=\"utf-8\"?>";
 			reqData += "<soap12:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap12=\"http://www.w3.org/2003/05/soap-envelope\">";
 			reqData += "<soap12:Body>";
@@ -111,7 +120,7 @@ package rhythm.utils
 			reqData += "</soap12:Envelope>";
 			
 			req.data = new XML(reqData);
-			
+						
 			tweetsLoader.addEventListener(Event.COMPLETE, tweetsLoaderCompleteHandler);
 			tweetsLoader.addEventListener(IOErrorEvent.IO_ERROR, tweetsLoaderErrorHandler);
 			tweetsLoader.load(req);
@@ -119,6 +128,9 @@ package rhythm.utils
 		
 		private function tweetsLoaderErrorHandler(e:IOErrorEvent):void
 		{
+			trace('\ttweetsXML FAILED, so loaded local version');
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('tweetsXML FAILED, so loading local version')}));
+
 			// error! So load local tweets xml...
 			var file:File = File.desktopDirectory.resolvePath('kioskData/serverXML/tweets.xml');
 			var fs:FileStream = new FileStream();
@@ -126,7 +138,8 @@ package rhythm.utils
 				tweetsXML = XML(fs.readUTFBytes(fs.bytesAvailable));
 			fs.close();
 			
-			trace('\ttweetsXML FAILED, so loaded local version');
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('tweetsXML FAILED, so LOADED local version')}));
+			
 			allXMLLoaded();
 		}
 		
@@ -141,6 +154,8 @@ package rhythm.utils
 			fs.close();
 			
 			trace('\ttweetsXML LOADED and saved in serverXML/tweets.xml');
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('tweetsXML LOADED and saved in serverXML/tweets.xml')}));
+
 			allXMLLoaded();
 		}
 		

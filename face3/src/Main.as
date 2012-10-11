@@ -121,6 +121,7 @@ package
 		private var timeOutMotion:TimeOut;
 		private var timeOutDelayMotion:Number;
 		private var motionSSOn:Boolean;
+		private var debugPanel:DebugPanel;
 
 		
 	
@@ -134,11 +135,26 @@ package
 			TweenPlugin.activate([ShortRotationPlugin, TransformAroundPointPlugin, TransformAroundCenterPlugin,BezierPlugin]);
 			
 			stage.align = StageAlign.TOP_LEFT;
+			
+			var debugOnScreen:Boolean = true;
 						
 //			stage.nativeWindow.height = stage.fullScreenHeight;
 //			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
+			
+			//onscreen debug output
+			//config.debug.showOutput=="true" || 
+			if(debugOnScreen)
+			{
+				debugPanel = new DebugPanel();
+				debugPanel.y = 300;
+				debugPanel.x = 50;
+				debugPanel.update("Hello from"+this);
+				debugPanel.alpha = .8;
+				addChild(debugPanel);
+			}
 
 			dataIO = new DataIO();
+			dataIO.addEventListener(CustomEvent.DEBUG_MESSAGE, showDebugMessage, false, 0, true);
 			dataIO.addEventListener(CustomEvent.DATA_READY, onDataReady, false, 0, true);
 			dataIO.getData();		
 			
@@ -236,10 +252,13 @@ package
 			headerFooterHarness.mouseEnabled = false;
 			headerFooterHarness.addChild(headerFooter);
 			addChild(headerFooterHarness);
+			if(debugPanel)headerFooterHarness.addChild(debugPanel);
 			
 			//qr code
 			var file:File = File.desktopDirectory.resolvePath("kioskData");
 			file= file.resolvePath("images/qrCode.png"); 
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('loading '+file.url +' does the file exist? ' +file.exists)}));
+
 			var qrLoader:ImageLoader =  new ImageLoader(file.url, {name:"qrCode", container:headerFooterHarness,x:950, y:1800});
 			qrLoader.load(true);
 			
@@ -248,7 +267,7 @@ package
 			addChild( faceRectContainer );	
 			
 			//face detection area on screen
-			if(config.showFaceDetectArea=="true")
+			if(config.debug.showFaceDetectArea=="true")
 			{
 				var dectectionAreaSprite:Sprite = new Sprite();
 				dectectionAreaSprite.graphics.lineStyle(1,0xFF0000);
@@ -267,12 +286,15 @@ package
 			timeOut3d = new TimeOut(timeOutDelay3d, timeOutReached3d);
 			timeOutMotion = new TimeOut(timeOutDelayMotion, timeOutReachedMotion);
 			
-			if(config.showStats=="true")
-			{//stats
+			//stats
+			if(config.debug.showStats=="true")
+			{
 				var stats:Stats = new Stats();
 				stats.y = 200;
 				addChild( stats);
 			}
+			
+			
 			
 			//search message
 			faceSearchMessage = new SearchingMessage();
@@ -280,12 +302,16 @@ package
 			faceSearchMessage.x = w;
 			faceSearchMessage.y = 200;
 			addChild(faceSearchMessage);
-			
-
-
 		}
 		
-		protected function onClose3dMessage(event:Event):void
+		private function showDebugMessage(e:CustomEvent):void
+		{
+			trace("showDebugMessage");
+			if(debugPanel) debugPanel.update(e.params.message);
+	
+		}		
+		
+		private function onClose3dMessage(event:Event):void
 		{
 			addBtn.visible = true;	
 		}

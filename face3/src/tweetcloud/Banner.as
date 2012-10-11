@@ -1,14 +1,16 @@
 package tweetcloud
 {
-	import com.greensock.loading.ImageLoader;
-	
-	import flash.display.Sprite;
-	import com.greensock.loading.LoaderMax;
-	import flash.filesystem.File;
-	import com.greensock.events.LoaderEvent;
 	import com.greensock.TweenMax;
 	import com.greensock.easing.*;
+	import com.greensock.events.LoaderEvent;
+	import com.greensock.loading.ImageLoader;
+	import com.greensock.loading.LoaderMax;
 	import com.greensock.loading.display.ContentDisplay;
+	
+	import flash.display.Sprite;
+	import flash.filesystem.File;
+	
+	import rhythm.events.CustomEvent;
 
 	public class Banner extends Sprite
 	{
@@ -36,7 +38,6 @@ package tweetcloud
 			{
 				var file:File = File.desktopDirectory.resolvePath("kioskData/images/banners");
 				file= file.resolvePath(fileNames[i]+".png"); 
-				trace("file url",file.url);
 				queue.append( new ImageLoader(file.url, {name:fileNames[i]}));
 
 			}
@@ -48,6 +49,8 @@ package tweetcloud
 		private function imagesLoaded(e:LoaderEvent):void
 		{
 			//trace("banners loaded");
+			dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('banners loaded')}));
+
 		}	
 		
 		public function showBanner(name:String):void

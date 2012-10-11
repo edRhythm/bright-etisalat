@@ -27,6 +27,7 @@ package rhythm.events
 			public static const TWEETBOX_READY:String = "TWEETBOX_READY";
 			public static const SHOW_BANNER:String = "SHOW_BANNER";
 			public static const CLOSE_3D_MESSAGE:String = "CLOSE_3D_MESSAGE";
+			public static const DEBUG_MESSAGE:String = "DEBUG_MESSAGE";
 
 			/**
 			 * A text message that can be passed to an event handler
