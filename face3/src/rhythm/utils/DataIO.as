@@ -216,5 +216,11 @@ package rhythm.utils
 			getKioskData();			
 			getTweets();
 		}
+		
+		public function getBoxColours():Array
+		{
+			// TODO Auto Generated method stub
+			return null;
+		}
 	}
 }

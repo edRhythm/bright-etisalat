@@ -181,6 +181,7 @@ package tweetcloud
 			for (var i:int=0; i<tweets.Profile.length(); ++i)
 			{				
 				var displayBox:TweetBox = new TweetBoxDisplay();
+				displayBox.bgColours = dataIO.configXML.threeD.plane.colours.colour;				
 				displayBox.addEventListener(CustomEvent.TWEETBOX_READY, onTweetBoxReady, false, 0, true);
 				
 				if (String(tweets.Profile[i].BodyImage).length) displayBox.populateTweetImage(tweets.Profile[i]);
@@ -202,6 +203,7 @@ package tweetcloud
 			for (var i:int=0; i<messages.user.length(); ++i)
 			{					
 				var displayBox:TweetBox = new TweetBoxDisplay();
+				displayBox.bgColours = dataIO.configXML.threeD.plane.colours.colour;
 				displayBox.populateMessage(messages.user[i]);
 				displayBox.addEventListener(CustomEvent.TWEETBOX_READY, onMessageBoxReady, false, 0, true);
 			}

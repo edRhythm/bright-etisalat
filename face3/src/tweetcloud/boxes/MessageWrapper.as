@@ -124,8 +124,6 @@ package tweetcloud.boxes
 			TweenMax.to(mat, settings.zoomDuration, {alpha:1, ease:Quad.easeInOut});
 			
 			dispatchEvent(new CustomEvent(CustomEvent.SHOW_BANNER, true, false, {interests:box.getInterests()}));
-
-
 		}
 		
 		private function showTweetBox():void

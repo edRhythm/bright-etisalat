@@ -51,7 +51,7 @@ package tweetcloud.boxes
 		private var bodyImagePath:String;
 		private var bodyImage:Sprite;
 		
-		private var bgColours:Array = [0xe91385, 0x94bc2b, 0x003edd];
+		public var bgColours:XMLList;
 		private var bgColour:uint;
 		private var moderated:String;
 
@@ -102,7 +102,7 @@ package tweetcloud.boxes
 			interestsField.text = interests;
 			interestsField.alpha = .7;
 			
-			bgColour = bgColours[Math.floor(Math.random()*bgColours.length)];
+			bgColour = uint(bgColours[Math.floor(Math.random()*bgColours.length())]);
 			TweenMax.to(bg, 0, {tint:bgColour});
 			if (blank) TweenMax.to(blank, 0, {tint:bgColour});
 			
@@ -124,7 +124,6 @@ package tweetcloud.boxes
 		private function killImageLoader(loader:ImageLoader):void
 		{
 			loader.cancel();
-			loader.dispose();
 			loader = null;
 		}
 		
@@ -239,7 +238,7 @@ package tweetcloud.boxes
 			handleField.alpha = tweetBird.alpha = .5;
 			interestsField.text = interests;
 			
-			bgColour = bgColours[Math.floor(Math.random()*bgColours.length)];
+			bgColour = uint(bgColours[Math.floor(Math.random()*bgColours.length())]);
 			TweenMax.to(bg, 0, {tint:bgColour});
 			if (blank) TweenMax.to(blank, 0, {tint:bgColour});
 			
