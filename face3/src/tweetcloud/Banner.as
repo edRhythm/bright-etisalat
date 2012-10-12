@@ -55,22 +55,27 @@ package tweetcloud
 		
 		public function showBanner(name:String):void
 		{
-			//trace("showBanner",name)
+			trace("showBanner",name)
 			clearBanners();
 			
 			bannerToShow =  LoaderMax.getContent(name);
-			bannerHarness.addChild(bannerToShow);
-			
 			TweenMax.killDelayedCallsTo(clearBanners);
-			TweenMax.killTweensOf(bannerToShow);
+
+			if(bannerToShow)
+			{
+				bannerHarness.addChild(bannerToShow);
+		
+				TweenMax.killTweensOf(bannerToShow);
 			
-			TweenMax.to(bannerToShow,.5,{delay:1, y:-200, ease:Back.easeOut});
+				TweenMax.to(bannerToShow,.5,{delay:1, y:-200, ease:Back.easeOut});
+			}
 
 		}
 		
 		public function closeBanner():void
 		{
-			TweenMax.to(bannerToShow,.25,{y:0, ease:Back.easeIn});
+			if(bannerToShow)TweenMax.to(bannerToShow,.25,{y:0, ease:Back.easeIn});
+			
 			TweenMax.delayedCall(.25,clearBanners);
 
 		}

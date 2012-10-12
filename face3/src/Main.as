@@ -79,6 +79,7 @@ package
 		private var dectMatrix:Matrix;
 		private var scaledXOffset:Number;
 		private var scaledDectW:Number;
+		private var dectAreaYOffset:Number;
 
 		private var scaledDectH:Number;
 		private var _camHarness:Sprite;
@@ -127,7 +128,6 @@ package
 	
 		public function Main() 
 		{
-			debug = true;
 			_faceDetection = true;
 			
 			_trackMotion = true;
@@ -172,11 +172,14 @@ package
 			
 			setUpCam();
 			initDetector();
-
+			timeOutMotion.start();
 		}		
 		
 		private function setUpCam():void
 		{
+			//debug or not
+			if(config.debug.debugEverything == "true") debug = true;
+			
 			//cam harness
 			_camOutput = new Sprite();
 			_camOutput.y = dh;
@@ -197,6 +200,8 @@ package
 			scaledXOffset = 75/scaleFactor;
 			scaledDectW = w/scaleFactor;
 			scaledDectH = h/scaleFactor;
+			
+			dectAreaYOffset = Number(config.debug.faceDetectionY);
 			
 			dectMatrix = new Matrix( 1/scaleFactor, 0, 0, 1/scaleFactor  );
 			dectMatrix.rotate( -90 * (Math.PI / 180 ) );
@@ -243,6 +248,8 @@ package
 			
 			//no motion saver
 			noActionSaver = new MovieSaver();
+			noActionSaver.addEventListener(CustomEvent.SAVER_STOPPED, doSaverTimedOut, false, 0, true);
+			noActionSaver.initWithTime(config.screenSaverOnTime);
 			addChild(noActionSaver);
 			
 			//header footer
@@ -252,7 +259,7 @@ package
 			headerFooterHarness.mouseEnabled = false;
 			headerFooterHarness.addChild(headerFooter);
 			addChild(headerFooterHarness);
-			if(config.debug.showOutput=="true"  && debugPanel)headerFooterHarness.addChild(debugPanel);
+			config.debug.showOutput=="true"  && debugPanel ? headerFooterHarness.addChild(debugPanel) : removeChild(debugPanel);
 			
 			//qr code
 			var file:File = File.desktopDirectory.resolvePath("kioskData");
@@ -271,7 +278,7 @@ package
 			{
 				var dectectionAreaSprite:Sprite = new Sprite();
 				dectectionAreaSprite.graphics.lineStyle(1,0xFF0000);
-				dectectionAreaSprite.graphics.drawRect(540-dectAreaW, 0, dectAreaW*2, dectAreaH*2);
+				dectectionAreaSprite.graphics.drawRect(540-dectAreaW, dectAreaYOffset, dectAreaW*2, dectAreaH*2);
 				addChild(dectectionAreaSprite);
 			}
 
@@ -304,21 +311,8 @@ package
 			addChild(faceSearchMessage);
 		}
 		
-		private function showDebugMessage(e:CustomEvent):void
-		{
-			if(debugPanel) debugPanel.update(e.params.message);
 	
-		}		
-		
-		private function onClose3dMessage(event:Event):void
-		{
-			addBtn.visible = true;	
-		}
-		
-		private function onShow3dMessage(event:Event):void
-		{
-			addBtn.visible = false;
-		}					
+				
 
 		private function cameraReadyHandler( event:Event ):void
 		{			
@@ -335,7 +329,8 @@ package
 					{
 						var tbm:Bitmap = new Bitmap( detectionMap );
 						tbm.scaleX = tbm.scaleY = scaleFactor; 
-						tbm.x = 300;
+						tbm.x = 600;
+						tbm.y = 200;
 						addChild( tbm );
 					}
 				}
@@ -345,7 +340,7 @@ package
 
 				///***************** sort out the dect recangle here
 				
-				detectionMap.copyPixels(bdata, new Rectangle(scaledXOffset,250/scaleFactor,scaledDectW,scaledDectH), new Point(0,0));
+				detectionMap.copyPixels(bdata, new Rectangle(scaledXOffset,(dectAreaYOffset/scaleFactor)*.5,scaledDectW,scaledDectH), new Point(0,0));
 
 				detector.detect( detectionMap );	
 				
@@ -374,8 +369,11 @@ package
 		
 		private function show3d():void
 		{
-			
 			faceSearchMessage.searchTF.text = "Face found!";
+			
+			//kill motion timeout & ss
+			noActionSaver.stopVideo();
+			timeOutMotion.cancel();
 
 			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );
 
@@ -405,9 +403,6 @@ package
 			timeOut3d.start();
 			stage.addEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut3d,false, 0,true);
 			
-			//kill motion timeout & ss
-			timeOutMotion.cancel();
-			noActionSaver.stopVideo();
 
 		}
 		
@@ -564,7 +559,6 @@ package
 			TweenMax.to(_camOutput,.5,{x:0 ,y:dh,  ease:Sine.easeIn});
 				
 			TweenMax.to(_camHarness,.5,{scaleX:1, scaleY:1, x:0, y:0, ease:Sine.easeInOut});	
-				//, colorMatrixFilter:{saturation:1, contrast:1, brightness:1},
 				
 			detector.removeEventListener(ObjectDetectorEvent.DETECTION_COMPLETE, detectionHandler );				
 		}
@@ -684,12 +678,13 @@ package
 				//clear saver
 				if(motionSSOn)
 				{
+					trace("cleared saver");
 					motionSSOn=false;
 					noActionSaver.stopVideo();
-				}else{
-					//reset saver timeout
-					timeOutMotion.reset();
 				}
+				
+				if(_trackMotion)timeOutMotion.reset();
+
 				
 				//change search message
 				if(faceSearchMessage.searchTF.text != "Searching for faces") faceSearchMessage.searchTF.text = "Searching for faces";
@@ -788,6 +783,7 @@ package
 		
 		private function doResetTimeOut3d(event:MouseEvent):void
 		{
+			trace("doResetTimeOut3d")
 			timeOut3d.reset();
 		}
 		
@@ -795,17 +791,14 @@ package
 		private function timeOutReached3d():void
 		{
 			//trace("timeOut 3d!");
-			exit3d();
-			
+			exit3d();		
 		}
 		
 		
 		private function timeOutReachedMotion():void
 		{
 			motionSSOn = true;
-
 			noActionSaver.restartVideo();
-			
 			timeOutMotion.cancel();	
 		}	
 		
@@ -825,6 +818,27 @@ package
 			if(faceSearchMessage.searchTF.text != "Searching for people") faceSearchMessage.searchTF.text = "Searching for people";
 
 		}
+		
+		private function showDebugMessage(e:CustomEvent):void
+		{
+			if(debugPanel) debugPanel.update(e.params.message);
+		}		
+		
+		private function onClose3dMessage(event:Event):void
+		{
+			addBtn.visible = true;	
+		}
+		
+		private function onShow3dMessage(event:Event):void
+		{
+			addBtn.visible = false;
+		}	
+		
+		private function doSaverTimedOut(event:Event):void
+		{
+			motionSSOn = false;
+			timeOutMotion.reset();
+		}	
 	}
 }
 

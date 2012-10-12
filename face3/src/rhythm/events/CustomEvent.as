@@ -28,6 +28,7 @@ package rhythm.events
 			public static const SHOW_BANNER:String = "SHOW_BANNER";
 			public static const CLOSE_3D_MESSAGE:String = "CLOSE_3D_MESSAGE";
 			public static const DEBUG_MESSAGE:String = "DEBUG_MESSAGE";
+			public static const SAVER_STOPPED:String = "SAVER_TIMED_OUT";
 
 			/**
 			 * A text message that can be passed to an event handler
