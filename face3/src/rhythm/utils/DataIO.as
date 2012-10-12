@@ -77,7 +77,6 @@ package rhythm.utils
 				var file:File = File.desktopDirectory.resolvePath('kioskData/localXML/' + fileName + '.xml');
 				trace('\t\tloading', file.nativePath);
 				dispatchEvent(new CustomEvent(CustomEvent.DEBUG_MESSAGE,true, false, {message:String('loading '+ file.nativePath)}));
-
 				
 				var fs:FileStream = new FileStream();
 				fs.open(file, FileMode.READ);
