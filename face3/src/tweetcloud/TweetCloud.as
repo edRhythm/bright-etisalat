@@ -54,6 +54,7 @@ package tweetcloud
 		
 		private var dataIO:DataIO;
 		private var banners:Banner;
+		private var blobsHolder:Sprite;
 		
 		
 		public function TweetCloud()
@@ -234,13 +235,18 @@ package tweetcloud
 		private function createBlobs(amount:int):void
 		{
 			blobs = [];
+			blobsHolder = new Sprite();
+			blobsHolder.mouseChildren = blobsHolder.mouseEnabled = blobsHolder.visible = false;
+			addChild(blobsHolder);
 			
 			for (var i:int=0; i<amount; ++i)
 			{
 				var blobBox:BlobBox = new BlobBox();
 				var blob:Blob = new BlobDisplay();
+				blobsHolder.addChild(blob);
 				
-				blobBox.init(blob, pointLight, fogMethod);
+				blob.init(dataIO);				
+				blobBox.init(blob, pointLight, fogMethod, dataIO);
 				
 				blobs.push(blobBox);
 				view.scene.addChild(blobBox.container);

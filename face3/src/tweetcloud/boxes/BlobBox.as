@@ -17,6 +17,8 @@ package tweetcloud.boxes
 	import flash.display.MovieClip;
 	import flash.geom.Point;
 	
+	import rhythm.utils.DataIO;
+	
 	
 	public class BlobBox
 	{
@@ -32,18 +34,20 @@ package tweetcloud.boxes
 		private var bmd:BitmapData;
 		
 		private var mat:TextureMaterial;
+		private var dataIO:DataIO;
 		
 		
 		public function BlobBox()
 		{
 		}
 		
-		public function init(blob:Blob, light:PointLight, fogMethod:FogMethod):void
+		public function init(blob:Blob, light:PointLight, fogMethod:FogMethod, dataIO:DataIO):void
 		{
+			this.dataIO = dataIO;
 			pointLight = light;
 			fog = fogMethod;
 			
-			spinSpeed = .1+Math.random()*.2;
+			spinSpeed = .1+Math.random()*.3;
 			
 			createPlane(blob);
 			createMaterial();
@@ -52,15 +56,18 @@ package tweetcloud.boxes
 		
 		private function createPlane(blob:Blob):void
 		{
-			var targetY:Number = 1000 - Math.random()*2000;
-			var targetScale:Number = .4+Math.random()*.5;
+			var planeBounds:XMLList = dataIO.configXML.threeD.plane;
+			var holeBounds:XMLList = dataIO.configXML.threeD.hole;
 			
 			plane = new Mesh(new PlaneGeometry(blob.width, blob.height));
-			plane.rotationX = ((targetY / 30)-90);
+			
+			plane.x = int(planeBounds.@diameter)/2 + Math.random()*int(planeBounds.@diameter);
+			plane.y = int(planeBounds.@bot) + Math.random()*(Math.abs(int(planeBounds.@bot))-Math.abs(int(holeBounds.@bot)));
+			if (Math.random() > .6) plane.y = int(holeBounds.@top) + Math.random()*(Math.abs(int(planeBounds.@top))-Math.abs(int(holeBounds.@top)));
+			
+			plane.rotationX = ((plane.y / 30)-90);
 			plane.rotationY = -90;
-			plane.scale(.01);
-				
-			TweenMax.to(plane, 2 + Math.random()*7, {x:800 + Math.random()*1000, y:targetY, scaleX:targetScale, scaleZ:targetScale, ease:Elastic.easeOut, delay:1+Math.random()});
+			plane.scale(.2 + Math.random()*.7);
 			
 			container = new ObjectContainer3D();
 			container.rotationY = Math.random()*360;

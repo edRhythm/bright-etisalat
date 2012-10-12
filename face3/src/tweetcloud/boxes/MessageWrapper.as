@@ -90,7 +90,7 @@ package tweetcloud.boxes
 			plane.x = int(planeBounds.@diameter)/2 + Math.random()*int(planeBounds.@diameter);
 			
 			plane.y = int(planeBounds.@bot) + Math.random()*(Math.abs(int(planeBounds.@bot))-Math.abs(int(holeBounds.@bot)));
-			if (Math.random() > .7) plane.y = int(holeBounds.@top) + Math.random()*(Math.abs(int(planeBounds.@top))-Math.abs(int(holeBounds.@top)));
+			if (Math.random() > .6) plane.y = int(holeBounds.@top) + Math.random()*(Math.abs(int(planeBounds.@top))-Math.abs(int(holeBounds.@top)));
 			
 			plane.rotationX = ((plane.y / 30)-90);
 			plane.rotationY = -90;
