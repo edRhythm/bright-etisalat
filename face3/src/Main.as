@@ -306,7 +306,6 @@ package
 		
 		private function showDebugMessage(e:CustomEvent):void
 		{
-			trace("showDebugMessage");
 			if(debugPanel) debugPanel.update(e.params.message);
 	
 		}		
@@ -344,7 +343,9 @@ package
 				bdata.draw(cameraDetectionBitmap.bitmapData, dectMatrix);
 				faceBMD.draw(_camHarness, faceMatrix);
 
-				detectionMap.copyPixels(bdata, new Rectangle(scaledXOffset,0,scaledDectW,scaledDectH), new Point(0,0));
+				///***************** sort out the dect recangle here
+				
+				detectionMap.copyPixels(bdata, new Rectangle(scaledXOffset,250/scaleFactor,scaledDectW,scaledDectH), new Point(0,0));
 
 				detector.detect( detectionMap );	
 				
