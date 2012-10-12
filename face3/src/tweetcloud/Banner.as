@@ -11,6 +11,7 @@ package tweetcloud
 	import flash.filesystem.File;
 	
 	import rhythm.events.CustomEvent;
+	import rhythm.utils.Maths;
 
 	public class Banner extends Sprite
 	{
@@ -25,25 +26,32 @@ package tweetcloud
 		
 		public function Banner()
 		{
+			
+		}
+		
+		public function initWithConfig(configXML:XML):void
+		{
 			bannerHarness = new Sprite();
 			bannerHarness.y = 1760;
 			bannerHarness.x = 145;
 			addChild(bannerHarness);
-				
+			
 			queue = new LoaderMax({name:"mainQueue",  onComplete:imagesLoaded});
+			
+			fileNames=[];
+			for each (var tag:String in configXML.bannerTags.tag)fileNames.push(tag);
 
-			fileNames = ["football", "social", "travel", "music", "entertainment", "business", "sport"];
 			
 			for (var i:int=0; i<fileNames.length; i++)
 			{
 				var file:File = File.desktopDirectory.resolvePath("kioskData/images/banners");
 				file= file.resolvePath(fileNames[i]+".png"); 
 				queue.append( new ImageLoader(file.url, {name:fileNames[i]}));
-
+				
 			}
-					
+			
 			queue.load();
-
+			
 		}
 		
 		private function imagesLoaded(e:LoaderEvent):void
@@ -53,9 +61,22 @@ package tweetcloud
 
 		}	
 		
-		public function showBanner(name:String):void
+		public function showBanner(tags:Array):void
 		{
-			trace("showBanner",name)
+			var matchingTags:Array = [];
+			var name:String;
+
+			for (var i:int=0;  i<fileNames.length; i++)
+			{
+				for (var p:int=0;  p<tags.length; p++)
+				{
+					if(String(tags[p])==String(fileNames[i]))matchingTags.push(tags[p]);
+				}
+			}
+			
+		
+			if(matchingTags.length>0) name = matchingTags[Maths.randomIntBetween(0,matchingTags.length-1)];		
+			
 			clearBanners();
 			
 			bannerToShow =  LoaderMax.getContent(name);
@@ -85,6 +106,7 @@ package tweetcloud
 			while(bannerHarness.numChildren>0)	bannerHarness.removeChildAt(0);
 
 		}
+		
 		
 	}
 }

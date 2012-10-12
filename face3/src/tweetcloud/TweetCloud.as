@@ -71,6 +71,7 @@ package tweetcloud
 			createBlobs(35);
 			
 			banners = new Banner();
+			banners.initWithConfig(dataIO.configXML);
 			addChild(banners);
 			
 			
@@ -161,10 +162,8 @@ package tweetcloud
 			
 			if(event.params.interests.length>0)
 			{			
-				var bannerName:String = event.params.interests[Maths.randomIntBetween(0,event.params.interests.length-1)];
-				trace("showing banner",bannerName);
 				
-				banners.showBanner(bannerName);
+				banners.showBanner(event.params.interests);
 			}
 		}
 		
