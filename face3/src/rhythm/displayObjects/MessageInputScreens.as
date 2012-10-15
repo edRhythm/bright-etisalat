@@ -18,6 +18,7 @@ package rhythm.displayObjects
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.geom.Matrix;
+	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.net.FileReference;
 	import flash.text.Font;
@@ -29,7 +30,8 @@ package rhythm.displayObjects
 	import rhythm.text.TFCreator;
 	import rhythm.text.TFormats;
 	import rhythm.utils.Maths;
-	import flash.geom.Point;
+	import rhythm.utils.StringUtils;
+	
 
 	public class MessageInputScreens extends MovieClip 
 	{
@@ -146,7 +148,11 @@ package rhythm.displayObjects
 			if(namesInput && namesInput.parent)messageBox.removeChild(namesInput);
 
 			TweenMax.allTo([greenRim, faceHarness], 0,{x:0});
-
+			TweenMax.to(cameraBtn,.5,{colorTransform:{tint:0x7F7F7F, tintAmount:0}});
+			TweenMax.to(greenRim.rimShape, 0, {removeTint:true});
+			
+			countdownBG.visible = false;
+			countdownTF.text = "";
 			
 			stageNum=1;
 			setUpStage1();
@@ -194,10 +200,6 @@ package rhythm.displayObjects
 
 			}
 			
-			//save rawBMD!
-
-	//		if(!photoTaken) camBMD.copyPixels(bmd,new Rectangle(0,0, bmd.width, bmd.height), new Point(0,0), rimMask);
-
 		}
 		
 		private function shutterClicked(e:Event):void
@@ -205,10 +207,15 @@ package rhythm.displayObjects
 			countDownNum = 3;
 			countdownTF.text=String(countDownNum);
 			countdownTF.alpha=0;
-			TweenMax.to(countdownTF,.75,{alpha:1,ease:Sine.easeOut, repeat:3, onRepeat:updateCountdown});
+			TweenMax.to(countdownTF,.75,{alpha:1,ease:Sine.easeOut, repeat:4, onRepeat:updateCountdown});
+			
+			TweenMax.to(greenRim.rimShape, .25, {removeTint:true, ease:Sine.easeIn, startAt:{tint:0x666666}});
+
 			countdownBG.visible = true;
 
 			cameraBtn.removeEventListener(MouseEvent.MOUSE_DOWN, shutterClicked);
+			TweenMax.to(cameraBtn,.25,{colorTransform:{tint:0x7F7F7F, tintAmount:0.5}});
+
 
 		}
 		
@@ -218,13 +225,16 @@ package rhythm.displayObjects
 			countDownNum --;
 			countdownTF.alpha = 0;
 			
-			if(countDownNum == 0 )
+			
+			if(countDownNum == -1 )
 			{
 				countdownTF.text="";
 
 				takePhoto();
 			}else{
 				countdownTF.text = String(countDownNum);
+				TweenMax.to(greenRim.rimShape, .25, {removeTint:true, ease:Sine.easeIn, startAt:{tint:0x666666}});
+
 			}
 				
 		}
@@ -234,16 +244,19 @@ package rhythm.displayObjects
 			photoTaken = true;
 			countdownBG.visible = false;
 					
-			TweenMax.to(faceHarness,.25,{delay:1, alpha:0, repeat:1, yoyo:true, repeatDelay:.5});
-			TweenMax.to(greenRim,.25,{delay:1,scaleX:0.2, scaleY:.2, ease:Sine.easeIn, repeat:1, yoyo:true, onComplete:showLastPhoto});
+			TweenMax.to(faceHarness,.25,{ alpha:0, repeat:1, yoyo:true, repeatDelay:.5});
+			TweenMax.to(greenRim,.25,{scaleX:0.2, scaleY:.2, ease:Sine.easeIn, repeat:1, yoyo:true, tint:0x666666, onComplete:showLastPhoto});
 
 		}
 		
 		private function showLastPhoto():void
 		{
-			TweenMax.to(cameraBtn,.5,{colorTransform:{tint:0x7F7F7F, tintAmount:0.5}});
-
-			nextBtn.visible = true;
+			if(config.justPhoto == "true")
+			{
+				finishBtn.visible=true;
+			}else{
+				nextBtn.visible = true;
+			}
 			retakeBtn.visible = true;
 			
 			nextBtn.addEventListener(MouseEvent.MOUSE_DOWN, doNextClick,false,0,true);
@@ -261,10 +274,16 @@ package rhythm.displayObjects
 
 			switch(stageNum)
 			{
-				case 1:					
-										
-					stage2();
-	
+				case 1:		
+					
+					if(config.justPhoto == "true")
+					{
+						progressDisplay.gotoAndStop(3);
+						finish();
+					}else{
+						stage2();
+					}
+					
 				break;
 				case 2:
 					
@@ -300,7 +319,16 @@ package rhythm.displayObjects
 		{
 			titleTF.text = "Your Interests";
 			
-			interestsInput = new InterestsInput(["Football","Travel","Entertainment","Social", "Music","Business"]);
+			var interests:Array = [];
+			
+			for each (var tag:String in config.bannerTags.tag)
+			{
+				
+				interests.push(StringUtils.toTitleCase(tag));
+			}
+
+			
+			interestsInput = new InterestsInput(interests);
 			messageBox.addChild(interestsInput);
 			interestsInput.x = 85;
 			interestsInput.y = (interestsInput.height*-.6)

@@ -34,15 +34,15 @@ package rhythm.displayObjects
 		
 		private function vidCompleteHandler(e:Event):void
 		{
-			trace("*********vidCompleteHandler");
+			//trace("*********vidCompleteHandler");
 			restartVideo(false);
 		}
 		
 		public function stopVideo():void
 		{
-			trace( "getCallee",  getCallee());
+			//trace( "getCallee",  getCallee());
 
-			trace("stopVideo");
+			//trace("stopVideo");
 			saverVideo.gotoVideoTime(0);
 			saverVideo.pauseVideo();
 			saverVideo.content.visible = false;
@@ -54,9 +54,9 @@ package rhythm.displayObjects
 		public function restartVideo(resetTimeout:Boolean = true):void
 		{
 
-			trace( "getCallee",  getCallee());
+		//	trace( "getCallee",  getCallee());
 			
-			trace("restartVideo, resetTimeout", resetTimeout);
+			//trace("restartVideo, resetTimeout", resetTimeout);
 			saverVideo.content.visible = true;
 			saverVideo.gotoVideoTime(0);
 			saverVideo.playVideo();

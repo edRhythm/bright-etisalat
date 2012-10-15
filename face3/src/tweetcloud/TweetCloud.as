@@ -160,11 +160,8 @@ package tweetcloud
 			TweenMax.allTo([faceBox.cameraPlane, faceBox.ringPlane],.5,{z:5000, ease:Sine.easeIn});
 
 			
-			if(event.params.interests.length>0)
-			{			
-				
-				banners.showBanner(event.params.interests);
-			}
+			if(event.params.interests.length>0)	banners.showBanner(event.params.interests);
+
 		}
 		
 		private function onCloseMessage(e:CustomEvent):void
@@ -224,7 +221,7 @@ package tweetcloud
 		
 		private function onResetAllPlanes(event:Event):void
 		{
-			trace("onResetAllPlanes");
+			//trace("onResetAllPlanes");
 			for each (var box:MessageWrapper in boxes)
 			{
 				box.resetPlane();

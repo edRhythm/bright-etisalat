@@ -123,6 +123,7 @@ package
 		private var timeOutDelayMotion:Number;
 		private var motionSSOn:Boolean;
 		private var debugPanel:DebugPanel;
+		private var comeCloser:ComeCloser;
 
 		
 	
@@ -138,8 +139,10 @@ package
 			
 			var debugOnScreen:Boolean = true;
 						
-//			stage.nativeWindow.height = stage.fullScreenHeight;
-//			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
+			stage.nativeWindow.height = stage.fullScreenHeight;
+			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
+			
+//			stage.nativeWindow.height = 1200;
 			
 			//onscreen debug output
 			//config.debug.showOutput=="true" || 
@@ -261,6 +264,13 @@ package
 			addChild(headerFooterHarness);
 			config.debug.showOutput=="true"  && debugPanel ? headerFooterHarness.addChild(debugPanel) : removeChild(debugPanel);
 			
+			//come closer
+			comeCloser = new ComeCloser();
+			comeCloser.x = w;
+			comeCloser.y = h;
+			comeCloser.mouseEnabled=false;
+			headerFooterHarness.addChild(comeCloser);
+		
 			//qr code
 			var file:File = File.desktopDirectory.resolvePath("kioskData");
 			file= file.resolvePath("images/qrCode.png"); 
@@ -436,6 +446,8 @@ package
 		
 		private function doAddClick(event:MouseEvent):void
 		{
+			event.stopPropagation(); 
+
 			inputMsg.visible = true;
 			inputMsg.resetInput();
 					
