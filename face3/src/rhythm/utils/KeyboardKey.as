@@ -20,6 +20,8 @@ package rhythm.utils
 		{
 			mouseChildren = false;
 			addEventListener(MouseEvent.MOUSE_DOWN, doKeyClick, false,0,true);
+			//addEventListener(MouseEvent.MOUSE_OVER, doKeyClick, false,0,true);
+
 		}
 		
 		private function doKeyClick(event:MouseEvent):void

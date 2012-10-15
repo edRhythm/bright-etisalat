@@ -11,9 +11,11 @@ package rhythm.displayObjects
 		
 	private var interestNames:Array ;
 	private var allBoxes:Array;
+	private var config:XML;
 	
-		public function InterestsInput(interests:Array)
+		public function InterestsInput(interests:Array, configXML:XML)
 		{
+			config = configXML;
 			interestNames = interests;
 			setUpBoxes();
 		}
@@ -46,6 +48,7 @@ package rhythm.displayObjects
 
 				tickB.y = (i*tickB.height)+i*20;
 				tickB.addEventListener(MouseEvent.MOUSE_DOWN, tickClick, false,0,true);
+				if(config.touchScreen == "true") tickB.addEventListener(MouseEvent.MOUSE_OVER, tickClick, false,0,true);
 				
 				allBoxes.push(tickB);
 				

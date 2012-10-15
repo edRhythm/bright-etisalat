@@ -76,14 +76,6 @@ package tweetcloud
 			
 			
 			pause3d(false);
-			
-			// stage.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownStage);
-		}
-		
-		private function onMouseDownStage(event:Event):void
-		{
-			dataIO.addEventListener(CustomEvent.DATA_READY, onFreshDataReady, false, 0, true);
-			dataIO.update();
 		}
 		
 		private function createFace():void
@@ -142,9 +134,12 @@ package tweetcloud
 		{
 			var box:MessageWrapper = new MessageWrapper();
 			box.init(nextId, displayBox, boxesHolder, pointLight, fogMethod, dataIO);
-			box.addEventListener('reset all planes', onResetAllPlanes, false, 0, true);	
+			// box.addEventListener(CustomEvent.RESET_ALL_PLANES, onResetAllPlanes, false, 0, true);
+			box.addEventListener(CustomEvent.ENABLE_ALL_PLANES, onEnableAllPlanes, false, 0, true);
+			box.addEventListener(CustomEvent.DISABLE_ALL_PLANES, onDisableAllPlanes, false, 0, true);
 			box.addEventListener(CustomEvent.SHOW_BANNER, onShowBanner, false, 0, true);
 			box.addEventListener(CustomEvent.CLOSE_3D_MESSAGE, onCloseMessage, false, 0, true);
+			box.addEventListener(CustomEvent.ADD_STAGE_MOUSEDOWN, onAddStageMouseDown, false, 0, true);
 			
 			boxes.push(box);
 			view.scene.addChild(box.container);				
@@ -158,8 +153,6 @@ package tweetcloud
 		{
 			//trace(event.params.interests);
 			TweenMax.allTo([faceBox.cameraPlane, faceBox.ringPlane],.5,{z:5000, ease:Sine.easeIn});
-
-			
 			if(event.params.interests.length>0)	banners.showBanner(event.params.interests);
 
 		}
@@ -221,11 +214,36 @@ package tweetcloud
 		
 		private function onResetAllPlanes(event:Event):void
 		{
+			stage.removeEventListener(MouseEvent.MOUSE_DOWN, onResetAllPlanes);
+			stage.removeEventListener(MouseEvent.MOUSE_OVER, onResetAllPlanes);
+			
 			//trace("onResetAllPlanes");
 			for each (var box:MessageWrapper in boxes)
 			{
 				box.resetPlane();
 			}
+		}
+		
+		private function onEnableAllPlanes(event:CustomEvent):void
+		{
+			for each (var box:MessageWrapper in boxes)
+			{
+				box.enablePlane();
+			}
+		}
+		
+		private function onDisableAllPlanes(event:Event):void
+		{
+			for each (var box:MessageWrapper in boxes)
+			{
+				box.disablePlane();
+			}
+		}
+		
+		private function onAddStageMouseDown(event:CustomEvent):void
+		{
+			stage.addEventListener(MouseEvent.MOUSE_DOWN, onResetAllPlanes, false, 0, true);
+			if(dataIO.configXML.touchScreen == "true") stage.addEventListener(MouseEvent.MOUSE_OVER, onResetAllPlanes, false, 0, true);
 		}
 		
 		private function createBlobs(amount:int):void

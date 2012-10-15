@@ -97,7 +97,8 @@ package tweetcloud.boxes
 			plane.scale(.8+Math.random()*.3);
 			
 			plane.mouseEnabled = true;
-			plane.addEventListener(MouseEvent3D.MOUSE_DOWN, onMouseDownPlane);
+			plane.addEventListener(MouseEvent3D.MOUSE_DOWN, onMouseDownPlane, false, 0, true);
+			if(dataIO.configXML.touchScreen == "true")  plane.addEventListener(MouseEvent3D.MOUSE_OVER, onMouseDownPlane, false, 0, true);
 			
 			container = new ObjectContainer3D();
 			container.rotationY = Math.random()*360;
@@ -106,7 +107,7 @@ package tweetcloud.boxes
 		
 		private function onMouseDownPlane(event:MouseEvent3D):void
 		{
-			dispatchEvent(new Event('reset all planes', true));
+			dispatchEvent(new CustomEvent(CustomEvent.DISABLE_ALL_PLANES, true));
 			doUpdate = plane.mouseEnabled = false;
 			
 			settings = {
@@ -136,7 +137,9 @@ package tweetcloud.boxes
 			
 			TweenMax.to(box, .14, {alpha:1, ease:Quad.easeOut});
 			box.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownBox, false, 0, true);
+			if(dataIO.configXML.touchScreen == "true") box.addEventListener(MouseEvent.MOUSE_OVER, onMouseDownBox, false, 0, true);
 			
+			dispatchEvent(new CustomEvent(CustomEvent.ADD_STAGE_MOUSEDOWN, true));
 		}
 		
 		private function onMouseDownBox(event:MouseEvent):void
@@ -144,11 +147,23 @@ package tweetcloud.boxes
 			resetPlane();
 		}
 		
+		public function disablePlane():void
+		{
+			plane.mouseEnabled = false;
+		}
+		
+		public function enablePlane():void
+		{
+			plane.mouseEnabled = true;
+		}
+		
 		public function resetPlane():void
 		{
 			if (settings != null)
 			{
 				box.removeEventListener(MouseEvent.MOUSE_DOWN, onMouseDownBox);
+				if(dataIO.configXML.touchScreen == "true") box.removeEventListener(MouseEvent.MOUSE_OVER, onMouseDownBox);
+
 				box.alpha = box.x = box.y = 0;
 				box.scaleX = box.scaleY = 1;
 				boxesHolder.addChild(box);
@@ -159,11 +174,13 @@ package tweetcloud.boxes
 				TweenMax.to(mat, .4, {alpha:settings.matAlpha, ease:Quad.easeInOut});
 				
 				dispatchEvent(new CustomEvent(CustomEvent.CLOSE_3D_MESSAGE, true));
-			}			
+			}
 		}
 		
 		private function resumeUpdate():void
 		{
+			dispatchEvent(new CustomEvent(CustomEvent.ENABLE_ALL_PLANES, true));
+			
 			doUpdate = plane.mouseEnabled = true;
 			settings = null;
 		}
@@ -232,5 +249,6 @@ package tweetcloud.boxes
 			box.removeEventListener(CustomEvent.TWEETBOX_READY, onUpdateBoxReady);
 			updateDisplayBox(box);
 		}
+		
 	}
 }

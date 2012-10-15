@@ -29,6 +29,11 @@ package rhythm.events
 			public static const CLOSE_3D_MESSAGE:String = "CLOSE_3D_MESSAGE";
 			public static const DEBUG_MESSAGE:String = "DEBUG_MESSAGE";
 			public static const SAVER_STOPPED:String = "SAVER_TIMED_OUT";
+			
+			public static const RESET_ALL_PLANES:String = "RESET_ALL_PLANES";
+			public static const DISABLE_ALL_PLANES:String = "DISABLE_ALL_PLANES";
+			public static const ENABLE_ALL_PLANES:String = "ENABLE_ALL_PLANES";
+			public static const ADD_STAGE_MOUSEDOWN:String = "ADD_STAGE_MOUSEDOWN";
 
 			/**
 			 * A text message that can be passed to an event handler
@@ -41,6 +46,7 @@ package rhythm.events
 			//--------------------------------------
 			//  CONSTRUCTOR
 			//--------------------------------------
+			
 			
 			/**
 			 *	@Constructor

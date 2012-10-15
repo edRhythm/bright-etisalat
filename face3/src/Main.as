@@ -45,12 +45,11 @@ package
 		
 		private var _camOutput :Sprite;
 		private var faceRectContainer :Sprite;
-		private var tf :TextField;
 		
 		private var cameraDetectionBitmap:CameraBitmap;
 		private var detectionMap:BitmapData;
 		private var scaleFactor:int = 14;
-		private var dScaleFactor:int = scaleFactor*2//32;
+		private var dScaleFactor:int = scaleFactor*2;
 
 		private var w:int = 540;
 		private var h:int = 960;
@@ -142,10 +141,7 @@ package
 			stage.nativeWindow.height = stage.fullScreenHeight;
 			stage.nativeWindow.width = stage.fullScreenHeight*0.5625;
 			
-//			stage.nativeWindow.height = 1200;
-			
-			//onscreen debug output
-			//config.debug.showOutput=="true" || 
+	
 			if(debugOnScreen)
 			{
 				debugPanel = new DebugPanel();
@@ -168,14 +164,12 @@ package
 			dataIO.removeEventListener(CustomEvent.DATA_READY, onDataReady);
 
 			config = dataIO.configXML;
-			//trace("config",config);
-			
+		
 			timeOutDelay3d = Number(config.timeOutDelay3d);
 			timeOutDelayMotion = Number(config.timeOutDelayMotion);
 			
 			setUpCam();
 			initDetector();
-			timeOutMotion.start();
 		}		
 		
 		private function setUpCam():void
@@ -268,7 +262,11 @@ package
 			comeCloser = new ComeCloser();
 			comeCloser.x = w;
 			comeCloser.y = h;
-			comeCloser.mouseEnabled=false;
+			comeCloser.visible = false;
+			comeCloser.addEventListener(MouseEvent.MOUSE_DOWN, doStart3dClick);
+		//	if(config.touchScreen == "true") comeCloser.addEventListener(MouseEvent.MOUSE_OVER, doStart3dClick);
+
+			//comeCloser.mouseEnabled=false;
 			headerFooterHarness.addChild(comeCloser);
 		
 			//qr code
@@ -319,8 +317,7 @@ package
 			faceSearchMessage.x = w;
 			faceSearchMessage.y = 200;
 			addChild(faceSearchMessage);
-		}
-		
+		}	
 	
 				
 
@@ -375,11 +372,25 @@ package
 			}
 		}
 		
+		private function doStart3dClick(event:MouseEvent=null):void
+		{
+			if(!_detected && !doing3dTransition)
+			{
+				show3d();	
+				doing3dTransition=true;
+			}
+		}		
+		
 		
 		
 		private function show3d():void
 		{
+			trace("show3d");
+			
+			//update screen messages
+			comeCloser.visible = false;
 			faceSearchMessage.searchTF.text = "Face found!";
+			
 			
 			//kill motion timeout & ss
 			noActionSaver.stopVideo();
@@ -412,6 +423,7 @@ package
 			//start timeOut
 			timeOut3d.start();
 			stage.addEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut3d,false, 0,true);
+			if(config.touchScreen == "true")stage.addEventListener(MouseEvent.MOUSE_OVER, doResetTimeOut3d,false, 0,true);
 			
 
 		}
@@ -441,6 +453,8 @@ package
 			addBtn.y = 695;
 			addBtn.alpha = 0;
 			addBtn.addEventListener(MouseEvent.MOUSE_DOWN, doAddClick, false, 0, true);
+			if(config.touchScreen == "true") addBtn.addEventListener(MouseEvent.MOUSE_OVER, doAddClick, false, 0, true);
+
 			addChild(addBtn);
 		}
 		
@@ -452,6 +466,8 @@ package
 			inputMsg.resetInput();
 					
 			addBtn.removeEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
+			if(config.touchScreen == "true") addBtn.removeEventListener(MouseEvent.MOUSE_OVER, doAddClick);
+
 			if(addBtn.parent)removeChild(addBtn);
 
 			tweetCloud.resetAllPlanes();
@@ -496,13 +512,7 @@ package
 			
 			if(e.rects.length>0)
 			{
-				
-				
-				if(!_detected && !doing3dTransition)
-				{
-					show3d();	
-					doing3dTransition=true;
-				}
+				doStart3dClick();
 				
 				hideTracker();
 				_trackMotion=false;
@@ -553,6 +563,8 @@ package
 			if(addBtn.parent)
 			{
 				addBtn.removeEventListener(MouseEvent.MOUSE_DOWN, doAddClick);
+				addBtn.removeEventListener(MouseEvent.MOUSE_OVER, doAddClick);
+
 				removeChild(addBtn);
 				addBtn=null;
 			}
@@ -583,12 +595,15 @@ package
 			
 			timeOut3d.cancel();
 			stage.removeEventListener(MouseEvent.MOUSE_DOWN, doResetTimeOut3d);
+			if(config.touchScreen == "true") stage.removeEventListener(MouseEvent.MOUSE_OVER, doResetTimeOut3d);
 			
 			faceSearchMessage.visible = true;
 			faceSearchMessage.searchTF.text = "Searching for faces";
 			
 			//start video saver timeout tracking
 			timeOutMotion.reset();
+			
+			comeCloser.visible = true;
 		}
 		
 		
@@ -622,7 +637,7 @@ package
 				{
 					var particle:ParticleCross = new ParticleCross();
 
-					particle.scaleX = particle.scaleY=Maths.randomIntBetween(5,20)/10;
+					particle.scaleX = particle.scaleY=Maths.randomIntBetween(5,60)/10;
 					particle.alpha=0;
 					TweenMax.to(particle,0,{x:pXPos, y:pYPos, tint:particleTints[Maths.randomIntBetween(0,particleTints.length-1)]});
 					
@@ -683,9 +698,9 @@ package
 			if(blobAreaScaled.width>blobMinW && blobAreaScaled.width<blobMaxW && blobAreaScaled.height>blobMinH && blobAreaScaled.height<blobMaxH && blobAreaScaled.height<blobAreaScaled.width)
 			{	
 				//trace("found a body");
-				TweenMax.allTo([trackerShape, bigCross, trackMessage], .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),ease:Sine.easeInOut},0.25,fadeOutTracker);
+			//	TweenMax.allTo([trackerShape, bigCross, trackMessage], .75, {y:dh-(blobAreaScaled.x+blobAreaScaled.width-(blobAreaScaled.width*.05)),ease:Sine.easeInOut},0.25,fadeOutTracker);
 				
-				TweenMax.allTo([trackerShape, bigCross, trackMessage], .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut},0.25);
+			//	TweenMax.allTo([trackerShape, bigCross, trackMessage], .25, {x:blobAreaScaled.y+(blobAreaScaled.height/2), autoAlpha:1, ease:Sine.easeInOut},0.25);
 			
 				//clear saver
 				if(motionSSOn)
@@ -717,27 +732,27 @@ package
 			//	addChild(trackerShape);
 				
 				bigCross = new BigCross();
-				addChild(bigCross);
+				//addChild(bigCross);
 				
 				trackMessage = new MessageHarness();
 				trackMessage.messageTF.text = config.text.motionTrackMessage;
-				addChild(trackMessage);
+				//addChild(trackMessage);
 
 			}
 			
-			trackerShape.visible = bigCross.visible = trackMessage.visible = true;
+		//	trackerShape.visible = bigCross.visible = trackMessage.visible = true;
 
 		}
 		
 		private function fadeOutTracker():void
 		{
 			//trace("fadeOutTracker");
-			TweenMax.allTo([trackerShape, bigCross, trackMessage],.25,{delay:1,alpha:0},0.12,hideTracker);
+			//TweenMax.allTo([trackerShape, bigCross, trackMessage],.25,{delay:1,alpha:0},0.12,hideTracker);
 		}
 		
 		private function hideTracker():void
 		{
-			trackerShape.visible = bigCross.visible = trackMessage.visible = false;
+			//trackerShape.visible = bigCross.visible = trackMessage.visible = false;
 		}
 		
 
@@ -745,7 +760,9 @@ package
 		private function detectMotionMode():void
 		{
 			if(!_motionDetector){
-				_motionDetector = new CameraMotionDetect(cameraDetectionBitmap.camVideo, 5, 1000000);
+				trace("Number(config.motionThreshold)",Number(config.motionThreshold));
+				_motionDetector = new CameraMotionDetect(cameraDetectionBitmap.camVideo, 5, Number(config.motionThreshold));
+			//	_motionDetector = new CameraMotionDetect(cameraDetectionBitmap.camVideo, 5, 1000000);
 
 				motionAreas = new BitmapData(h, w, false, 0x000000);	
 								
@@ -812,6 +829,9 @@ package
 			motionSSOn = true;
 			noActionSaver.restartVideo();
 			timeOutMotion.cancel();	
+			
+			comeCloser.visible =false;
+
 		}	
 		
 		
@@ -822,7 +842,10 @@ package
 			_camHarness = new Sprite();
 			_camHarness.addChild(new Bitmap( cameraDetectionBitmap.bitmapData));
 			_camOutput.addChild(_camHarness );
-			removeChild(_infoPanel);			
+			removeChild(_infoPanel);	
+			
+			comeCloser.visible =true;
+			timeOutMotion.start();
 		}	
 		
 		private function showPeopleMessage():void
@@ -848,8 +871,17 @@ package
 		
 		private function doSaverTimedOut(event:Event):void
 		{
-			motionSSOn = false;
-			timeOutMotion.reset();
+			trace("doSaverTimedOut");
+			if(motionSSOn)
+			{
+				motionSSOn = false;
+				timeOutMotion.reset();
+				comeCloser.visible =true;
+			}else{
+				comeCloser.visible =false;				
+			}
+	
+
 		}	
 	}
 }

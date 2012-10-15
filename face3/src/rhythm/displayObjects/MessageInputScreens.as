@@ -21,6 +21,7 @@ package rhythm.displayObjects
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.net.FileReference;
+	import flash.net.dns.AAAARecord;
 	import flash.text.Font;
 	import flash.text.TextField;
 	import flash.text.TextFormat;
@@ -44,6 +45,8 @@ package rhythm.displayObjects
 		public var titleTF:TextField;
 		public var finishBtn:SimpleButton;
 		public var progressDisplay:MovieClip;
+		public var inputBG:MovieClip;
+		public var thankYouMessage:MovieClip;
 		
 		private var faceBitmap:Bitmap;
 		private var camBMD:BitmapData;
@@ -176,6 +179,13 @@ package rhythm.displayObjects
 			
 			cancelBtn.addEventListener(MouseEvent.MOUSE_DOWN, doCancelClick,false,0,true);
 			cameraBtn.addEventListener(MouseEvent.MOUSE_DOWN, shutterClicked,false,0,true);
+
+			if(config.touchScreen == "true") 
+			{
+				cancelBtn.addEventListener(MouseEvent.MOUSE_OVER, doCancelClick,false,0,true);
+				cameraBtn.addEventListener(MouseEvent.MOUSE_OVER, shutterClicked,false,0,true);
+			}
+
 			
 			this.y=0;
 			TweenMax.from(this,.5,{y:-1920,ease:Sine.easeOut});
@@ -214,6 +224,8 @@ package rhythm.displayObjects
 			countdownBG.visible = true;
 
 			cameraBtn.removeEventListener(MouseEvent.MOUSE_DOWN, shutterClicked);
+			cameraBtn.removeEventListener(MouseEvent.MOUSE_OVER, shutterClicked);
+
 			TweenMax.to(cameraBtn,.25,{colorTransform:{tint:0x7F7F7F, tintAmount:0.5}});
 
 
@@ -263,6 +275,12 @@ package rhythm.displayObjects
 			finishBtn.addEventListener(MouseEvent.MOUSE_DOWN, doNextClick,false,0,true);
 			retakeBtn.addEventListener(MouseEvent.MOUSE_DOWN, retakePhoto,false,0,true);
 			
+			if(config.touchScreen == "true") 
+			{
+			nextBtn.addEventListener(MouseEvent.MOUSE_OVER, doNextClick,false,0,true);
+			finishBtn.addEventListener(MouseEvent.MOUSE_OVER, doNextClick,false,0,true);
+			retakeBtn.addEventListener(MouseEvent.MOUSE_OVER, retakePhoto,false,0,true);
+			}
 			TweenMax.allFrom([nextBtn, retakeBtn],.5,{scaleX:0,scaleY:0, ease:Bounce.easeOut},0.25);
 			// TODO Auto Generated method stub
 		}
@@ -328,7 +346,7 @@ package rhythm.displayObjects
 			}
 
 			
-			interestsInput = new InterestsInput(interests);
+			interestsInput = new InterestsInput(interests, config);
 			messageBox.addChild(interestsInput);
 			interestsInput.x = 85;
 			interestsInput.y = (interestsInput.height*-.6)
@@ -426,8 +444,10 @@ package rhythm.displayObjects
 			trace("saved xml",userXML);
 			
 			//tween offstage
-			TweenMax.to(this,.5,{delay:4,y:-1920,ease:Sine.easeIn, onComplete:finished});
 
+			//TweenMax.to(this,.5,{delay:4,y:-1920,ease:Sine.easeIn, onComplete:finished});
+			TweenMax.allTo([thankYouMessage,titleTF,progressDisplay, inputBG],.5,{ delay:.5, autoAlpha:0});
+			TweenMax.to(messageBox,1.5,{delay:.75, scaleX:.25, scaleY:.25,rotationY:70, x:150, ease:Back.easeIn, onComplete:finished});
 		}
 		
 		private function finished():void
@@ -466,6 +486,8 @@ package rhythm.displayObjects
 			countdownBG.visible=true;
 			retakeBtn.visible = false;
 			cameraBtn.addEventListener(MouseEvent.MOUSE_DOWN, shutterClicked,false,0,true);
+			if(config.touchScreen == "true") cameraBtn.addEventListener(MouseEvent.MOUSE_OVER, shutterClicked,false,0,true);
+
 			TweenMax.to(cameraBtn,.5,{colorTransform:{tint:0x7F7F7F, tintAmount:0}});
 			countdownBG.visible = false;
 
